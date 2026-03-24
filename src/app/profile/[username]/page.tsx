@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMemberProfile, samplePosts, type MemberProfile } from "@/lib/site";
 
 type ProfilePageProps = {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 };
 
 function fallbackProfile(username: string): MemberProfile {
@@ -26,9 +26,10 @@ function fallbackProfile(username: string): MemberProfile {
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const username = params.username.trim().toLowerCase();
-  const sampleProfile = getMemberProfile(username);
+  const { username: rawUsername } = await params;
+  const username = rawUsername.trim().toLowerCase();
 
+  const sampleProfile = getMemberProfile(username);
   const supabase = await createSupabaseServerClient();
 
   const { data: dbProfile, error: profileError } = await supabase
@@ -141,8 +142,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <div className="card">
               <h2 className="text-lg font-semibold">Following</h2>
               <p className="mt-3 text-sm leading-6 text-muted">
-                This member follows {profile.following} people and is followed by{" "}
-                {profile.followers} members.
+                This member follows {profile.following} people and is followed by {profile.followers} members.
               </p>
             </div>
           </aside>
@@ -150,9 +150,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <section className="space-y-4">
             <div className="card">
               <h2 className="text-lg font-semibold">Posts</h2>
-              <p className="mt-2 text-sm text-muted">
-                Recent activity from {profile.displayName}.
-              </p>
+              <p className="mt-2 text-sm text-muted">Recent activity from {profile.displayName}.</p>
             </div>
 
             {posts.length ? (
