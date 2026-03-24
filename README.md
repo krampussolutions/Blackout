@@ -59,3 +59,4 @@ npm run dev
 
 This is a starter scaffold, not a finished production app. Authentication UI is present, but you still need to connect the auth actions to your Supabase project and add route protection as you build.
 "# Blackout" 
+"# Blackout" 
