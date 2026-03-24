@@ -22,7 +22,12 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
           </div>
           <div className="flex gap-3">
             <button type="button" className="button-secondary">Message</button>
-            <FollowButton isFollowing={profile.isFollowing} />
+            <FollowButton
+              targetUserId={profile.id}
+              targetUsername={profile.username}
+              initialIsFollowing={profile.isFollowing}
+              disabled={profile.isCurrentUser}
+            />
           </div>
         </div>
 

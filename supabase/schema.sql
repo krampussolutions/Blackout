@@ -67,7 +67,7 @@ begin
   insert into public.profiles (id, username, display_name)
   values (
     new.id,
-    coalesce(nullif(new.raw_user_meta_data ->> 'username', ''), split_part(new.email, '@', 1)),
+    lower(coalesce(nullif(new.raw_user_meta_data ->> 'username', ''), split_part(new.email, '@', 1))),
     coalesce(nullif(new.raw_user_meta_data ->> 'display_name', ''), split_part(new.email, '@', 1))
   )
   on conflict (id) do update
@@ -89,6 +89,21 @@ alter table public.posts enable row level security;
 alter table public.comments enable row level security;
 alter table public.likes enable row level security;
 alter table public.follows enable row level security;
+
+drop policy if exists "Public profiles are viewable by everyone" on public.profiles;
+drop policy if exists "Categories are readable by everyone" on public.categories;
+drop policy if exists "Posts are readable by everyone" on public.posts;
+drop policy if exists "Comments are readable by everyone" on public.comments;
+drop policy if exists "Likes are readable by everyone" on public.likes;
+drop policy if exists "Follows are readable by everyone" on public.follows;
+drop policy if exists "Users can update their own profile" on public.profiles;
+drop policy if exists "Users can insert their own profile" on public.profiles;
+drop policy if exists "Authenticated users can insert posts" on public.posts;
+drop policy if exists "Users can update their own posts" on public.posts;
+drop policy if exists "Authenticated users can insert comments" on public.comments;
+drop policy if exists "Authenticated users can like posts" on public.likes;
+drop policy if exists "Authenticated users can follow other users" on public.follows;
+drop policy if exists "Users can unfollow people they follow" on public.follows;
 
 create policy "Public profiles are viewable by everyone" on public.profiles for select using (true);
 create policy "Categories are readable by everyone" on public.categories for select using (true);

@@ -1,15 +1,30 @@
 import Link from "next/link";
 import { siteConfig } from "@/lib/site";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import LogoutButton from "@/components/LogoutButton";
 
 const links = [
   { href: "/feed", label: "Home" },
   { href: "/posts/new", label: "Create" },
   { href: "/groups", label: "Groups" },
   { href: "/members", label: "Members" },
-  { href: "/profile/ridgewalker", label: "Profile" }
 ];
 
-export default function Nav() {
+export default async function Nav() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let profileUsername: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    profileUsername = profile?.username || (typeof user.user_metadata?.username === "string" ? user.user_metadata.username : null);
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-[#0b0f12]/95 backdrop-blur">
       <div className="container-shell flex items-center gap-4 py-3">
@@ -33,12 +48,27 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
-          <Link href="/login" className="rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panelSoft hover:text-text">
-            Login
-          </Link>
-          <Link href="/signup" className="button-primary text-sm">
-            Join
-          </Link>
+
+          {user ? (
+            <>
+              <Link
+                href={profileUsername ? `/profile/${profileUsername}` : "/feed"}
+                className="rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panelSoft hover:text-text"
+              >
+                Profile
+              </Link>
+              <LogoutButton />
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panelSoft hover:text-text">
+                Login
+              </Link>
+              <Link href="/signup" className="button-primary text-sm">
+                Join
+              </Link>
+            </>
+          )}
         </nav>
       </div>
     </header>

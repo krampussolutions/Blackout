@@ -4,11 +4,12 @@ import FollowButton from "@/components/FollowButton";
 
 type MemberCardProps = {
   member: MemberProfile;
+  compact?: boolean;
 };
 
-export default function MemberCard({ member }: MemberCardProps) {
+export default function MemberCard({ member, compact = false }: MemberCardProps) {
   return (
-    <div className="rounded-2xl border border-border bg-panelSoft p-4">
+    <div className={compact ? "rounded-2xl border border-border bg-panelSoft p-4" : "rounded-2xl border border-border bg-panelSoft p-4"}>
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-panel text-sm font-semibold text-text">
           {member.avatar}
@@ -30,7 +31,12 @@ export default function MemberCard({ member }: MemberCardProps) {
       </div>
       <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted">
         <span>{member.followers} followers</span>
-        <FollowButton isFollowing={member.isFollowing} />
+        <FollowButton
+          targetUserId={member.id}
+          targetUsername={member.username}
+          initialIsFollowing={member.isFollowing}
+          disabled={member.isCurrentUser}
+        />
       </div>
     </div>
   );

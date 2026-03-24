@@ -6,6 +6,7 @@ export const siteConfig = {
 };
 
 export type MemberProfile = {
+  id?: string;
   username: string;
   displayName: string;
   bio: string;
@@ -18,6 +19,7 @@ export type MemberProfile = {
   posts: number;
   joinedLabel: string;
   isFollowing?: boolean;
+  isCurrentUser?: boolean;
 };
 
 export const categories = [
