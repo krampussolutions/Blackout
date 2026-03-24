@@ -60,3 +60,11 @@ npm run dev
 This is a starter scaffold, not a finished production app. Authentication UI is present, but you still need to connect the auth actions to your Supabase project and add route protection as you build.
 "# Blackout" 
 "# Blackout" 
+
+
+## Auth setup notes
+
+- Run `supabase/schema.sql` again in the Supabase SQL Editor so the `handle_new_user` trigger is created.
+- The signup page now uses Supabase Auth directly.
+- If email confirmation is enabled in Supabase, signup will show a confirmation message instead of logging in immediately.
+- If you want instant signup during testing, disable email confirmation in Supabase Auth > Providers > Email.

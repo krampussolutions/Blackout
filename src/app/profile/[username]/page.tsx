@@ -1,21 +1,95 @@
 import { notFound } from "next/navigation";
 import PostCard from "@/components/PostCard";
 import ProfileHeader from "@/components/ProfileHeader";
-import { getMemberProfile, samplePosts } from "@/lib/site";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getMemberProfile, samplePosts, type MemberProfile } from "@/lib/site";
 
 type ProfilePageProps = {
   params: Promise<{ username: string }>;
 };
 
+function fallbackProfile(username: string): MemberProfile {
+  return {
+    username,
+    displayName: username,
+    bio: "New Blackout Network member.",
+    location: "Location not set",
+    avatar: username.slice(0, 2).toUpperCase(),
+    cover: "from-slate-700 via-slate-800 to-zinc-950",
+    interests: ["Preparedness"],
+    followers: 0,
+    following: 0,
+    posts: 0,
+    joinedLabel: "Joined recently",
+    isFollowing: false,
+  };
+}
+
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { username } = await params;
-  const profile = getMemberProfile(username);
+  const sampleProfile = getMemberProfile(username);
+
+  const supabase = await createSupabaseServerClient();
+  const { data: dbProfile } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, bio, location, created_at")
+    .eq("username", username)
+    .maybeSingle();
+
+  const profile = sampleProfile ?? (dbProfile
+    ? {
+        username: dbProfile.username,
+        displayName: dbProfile.display_name || dbProfile.username,
+        bio: dbProfile.bio || "New Blackout Network member.",
+        location: dbProfile.location || "Location not set",
+        avatar: dbProfile.username.slice(0, 2).toUpperCase(),
+        cover: "from-slate-700 via-slate-800 to-zinc-950",
+        interests: ["Preparedness"],
+        followers: 0,
+        following: 0,
+        posts: 0,
+        joinedLabel: dbProfile.created_at
+          ? `Joined ${new Date(dbProfile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}`
+          : "Joined recently",
+        isFollowing: false,
+      }
+    : null);
 
   if (!profile) {
     notFound();
   }
 
-  const posts = samplePosts.filter((post) => post.author === username);
+  let posts = samplePosts.filter((post) => post.author === username);
+
+  if (dbProfile?.id) {
+    const [{ count: postCount }, { count: followerCount }, { count: followingCount }, { data: dbPosts }] = await Promise.all([
+      supabase.from("posts").select("id", { count: "exact", head: true }).eq("user_id", dbProfile.id),
+      supabase.from("follows").select("id", { count: "exact", head: true }).eq("following_id", dbProfile.id),
+      supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", dbProfile.id),
+      supabase
+        .from("posts")
+        .select("id, title, content, created_at, categories(name)")
+        .eq("user_id", dbProfile.id)
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+
+    profile.posts = postCount || 0;
+    profile.followers = followerCount || 0;
+    profile.following = followingCount || 0;
+
+    if (dbPosts && dbPosts.length > 0) {
+      posts = dbPosts.map((post) => ({
+        id: post.id,
+        title: post.title,
+        category: (Array.isArray(post.categories) ? post.categories[0]?.name : (post.categories as { name?: string } | null)?.name) || "General Preparedness",
+        author: profile.username,
+        excerpt: post.content,
+        comments: 0,
+        likes: 0,
+      }));
+    }
+  }
 
   return (
     <main className="container-shell py-10">
