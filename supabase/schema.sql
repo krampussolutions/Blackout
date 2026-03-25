@@ -180,3 +180,21 @@ create policy "Authenticated users can update covers" on storage.objects for upd
 create policy "Authenticated users can delete covers" on storage.objects for delete using (
   bucket_id = 'covers' and auth.role() = 'authenticated' and (storage.foldername(name))[1] = auth.uid()::text
 );
+
+
+drop policy if exists "Admins can update member roles" on public.profiles;
+drop policy if exists "Admins can delete any comment" on public.comments;
+
+create policy "Admins can update member roles" on public.profiles for update using (
+  exists (
+    select 1 from public.profiles as admin_profile
+    where admin_profile.id = auth.uid() and admin_profile.membership_tier = 'admin'
+  )
+);
+
+create policy "Admins can delete any comment" on public.comments for delete using (
+  exists (
+    select 1 from public.profiles as admin_profile
+    where admin_profile.id = auth.uid() and admin_profile.membership_tier = 'admin'
+  )
+);
