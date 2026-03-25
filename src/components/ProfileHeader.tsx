@@ -57,14 +57,14 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
             <div className="text-2xl font-bold text-text">{profile.posts}</div>
             <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">Posts</div>
           </div>
-          <div className="rounded-2xl border border-border bg-panelSoft p-4">
+          <Link href={`/profile/${profile.username}/followers`} className="rounded-2xl border border-border bg-panelSoft p-4 transition hover:border-white/20">
             <div className="text-2xl font-bold text-text">{profile.followers}</div>
             <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">Followers</div>
-          </div>
-          <div className="rounded-2xl border border-border bg-panelSoft p-4">
+          </Link>
+          <Link href={`/profile/${profile.username}/following`} className="rounded-2xl border border-border bg-panelSoft p-4 transition hover:border-white/20">
             <div className="text-2xl font-bold text-text">{profile.following}</div>
             <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">Following</div>
-          </div>
+          </Link>
           <div className="rounded-2xl border border-border bg-panelSoft p-4">
             <div className="text-sm font-semibold text-text">{profile.joinedLabel}</div>
             <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted">Member Since</div>

@@ -117,6 +117,10 @@ drop policy if exists "Users can delete their own posts" on public.posts;
 drop policy if exists "Admins can delete any post" on public.posts;
 drop policy if exists "Authenticated users can insert comments" on public.comments;
 drop policy if exists "Authenticated users can like posts" on public.likes;
+
+drop policy if exists "Users can unlike posts" on public.likes;
+drop policy if exists "Users can delete their own comments" on public.comments;
+drop policy if exists "Users can update their own comments" on public.comments;
 drop policy if exists "Authenticated users can follow other users" on public.follows;
 drop policy if exists "Users can unfollow people they follow" on public.follows;
 drop policy if exists "Avatar images are public" on storage.objects;
@@ -148,6 +152,10 @@ create policy "Admins can delete any post" on public.posts for delete using (
 );
 create policy "Authenticated users can insert comments" on public.comments for insert with check (auth.uid() = user_id);
 create policy "Authenticated users can like posts" on public.likes for insert with check (auth.uid() = user_id);
+
+create policy "Users can unlike posts" on public.likes for delete using (auth.uid() = user_id);
+create policy "Users can delete their own comments" on public.comments for delete using (auth.uid() = user_id);
+create policy "Users can update their own comments" on public.comments for update using (auth.uid() = user_id);
 create policy "Authenticated users can follow other users" on public.follows for insert with check (auth.uid() = follower_id);
 create policy "Users can unfollow people they follow" on public.follows for delete using (auth.uid() = follower_id);
 

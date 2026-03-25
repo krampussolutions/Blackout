@@ -1,19 +1,36 @@
 import Link from "next/link";
 import { getMemberProfile } from "@/lib/site";
+import LikeButton from "@/components/LikeButton";
+import PostOwnerActions from "@/components/PostOwnerActions";
 
 type PostCardProps = {
+  id: string;
   title: string;
   category: string;
   author: string;
+  authorDisplayName?: string;
   excerpt: string;
   comments: number;
   likes?: number;
+  initialLiked?: boolean;
+  isOwner?: boolean;
 };
 
-export default function PostCard({ title, category, author, excerpt, comments, likes = 0 }: PostCardProps) {
+export default function PostCard({
+  id,
+  title,
+  category,
+  author,
+  authorDisplayName,
+  excerpt,
+  comments,
+  likes = 0,
+  initialLiked = false,
+  isOwner = false,
+}: PostCardProps) {
   const profile = getMemberProfile(author);
   const avatar = profile?.avatar || author.slice(0, 2).toUpperCase();
-  const displayName = profile?.displayName || author;
+  const displayName = authorDisplayName || profile?.displayName || author;
 
   return (
     <article className="card">
@@ -27,12 +44,15 @@ export default function PostCard({ title, category, author, excerpt, comments, l
             <span className="text-xs text-muted">@{author}</span>
             <span className="text-xs text-muted">posted in {category}</span>
           </div>
-          <p className="mt-1 text-xs text-muted">Just now • Preparedness discussion</p>
+          <p className="mt-1 text-xs text-muted">Preparedness discussion</p>
         </div>
+        {isOwner ? <PostOwnerActions postId={id} canEdit compact /> : null}
       </div>
 
-      <h3 className="mb-2 text-xl font-semibold leading-tight">{title}</h3>
-      <p className="mb-5 text-sm leading-6 text-muted">{excerpt}</p>
+      <Link href={`/posts/${id}`} className="block hover:opacity-95">
+        <h3 className="mb-2 text-xl font-semibold leading-tight">{title}</h3>
+        <p className="mb-5 whitespace-pre-wrap text-sm leading-6 text-muted">{excerpt}</p>
+      </Link>
 
       <div className="mb-4 flex items-center gap-4 text-xs text-muted">
         <span>{likes} likes</span>
@@ -40,9 +60,9 @@ export default function PostCard({ title, category, author, excerpt, comments, l
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
-        <button className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">Like</button>
-        <button className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">Comment</button>
-        <button className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">Save</button>
+        <LikeButton postId={id} initialLiked={initialLiked} initialCount={likes} />
+        <Link href={`/posts/${id}`} className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">Comment</Link>
+        <Link href={`/posts/${id}`} className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">View Post</Link>
         <Link href={`/profile/${author}`} className="ml-auto rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">
           View Profile
         </Link>

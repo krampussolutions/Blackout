@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import PostCard from "@/components/PostCard";
 import ProfileHeader from "@/components/ProfileHeader";
@@ -16,21 +17,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: dbProfile, error: profileError }, { data: dbPosts }, { data: followRow }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, username, display_name, bio, location, avatar_url, cover_url, interests, membership_tier, created_at")
-      .ilike("username", username)
-      .maybeSingle(),
-    supabase
-      .from("posts")
-      .select("id, title, content, created_at, categories(name), user_id")
-      .order("created_at", { ascending: false })
-      .limit(20),
-    user
-      ? supabase.from("follows").select("id").eq("follower_id", user.id).maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-  ]);
+  const { data: dbProfile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, bio, location, avatar_url, cover_url, interests, membership_tier, created_at")
+    .ilike("username", username)
+    .maybeSingle();
 
   if (profileError) {
     console.error("Profile query error:", profileError);
@@ -86,17 +77,41 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   let posts = samplePosts.filter((post) => post.author.toLowerCase() === username);
 
-  const memberPosts = (dbPosts || []).filter((post) => post.user_id === dbProfile?.id);
-  if (memberPosts.length > 0) {
-    posts = memberPosts.map((post) => ({
-      id: post.id,
-      title: post.title,
-      category: (Array.isArray(post.categories) ? post.categories[0]?.name : (post.categories as { name?: string } | null)?.name) || "General Preparedness",
-      author: profile.username,
-      excerpt: post.content,
-      comments: 0,
-      likes: 0,
-    }));
+  if (dbProfile?.id) {
+    const [{ data: memberPosts }, { data: likeRows }, { data: commentRows }] = await Promise.all([
+      supabase
+        .from("posts")
+        .select("id, title, content, created_at, categories(name), user_id")
+        .eq("user_id", dbProfile.id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      user ? supabase.from("likes").select("post_id").eq("user_id", user.id) : Promise.resolve({ data: [] as { post_id: string }[] }),
+      supabase.from("comments").select("id, post_id").limit(500),
+    ]);
+
+    const likedPostIds = new Set((likeRows || []).map((row) => row.post_id));
+    const commentCountByPost = new Map<string, number>();
+    (commentRows || []).forEach((row: any) => {
+      commentCountByPost.set(row.post_id, (commentCountByPost.get(row.post_id) || 0) + 1);
+    });
+
+    if (memberPosts && memberPosts.length > 0) {
+      posts = await Promise.all(memberPosts.map(async (post) => {
+        const { count: likeCount } = await supabase.from("likes").select("id", { count: "exact", head: true }).eq("post_id", post.id);
+        return {
+          id: post.id,
+          title: post.title,
+          category: (Array.isArray(post.categories) ? post.categories[0]?.name : (post.categories as { name?: string } | null)?.name) || "General Preparedness",
+          author: profile.username,
+          authorDisplayName: profile.displayName,
+          excerpt: post.content,
+          comments: commentCountByPost.get(post.id) || 0,
+          likes: likeCount || 0,
+          initialLiked: likedPostIds.has(post.id),
+          isOwner: user?.id === post.user_id,
+        };
+      }));
+    }
   }
 
   return (
@@ -114,10 +129,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </div>
 
             <div className="card">
-              <h2 className="text-lg font-semibold">Following</h2>
+              <h2 className="text-lg font-semibold">Network</h2>
               <p className="mt-3 text-sm leading-6 text-muted">
                 This member follows {profile.following} people and is followed by {profile.followers} members.
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href={`/profile/${profile.username}/followers`} className="button-secondary">Followers</Link>
+                <Link href={`/profile/${profile.username}/following`} className="button-secondary">Following</Link>
+              </div>
             </div>
           </aside>
 

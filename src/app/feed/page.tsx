@@ -45,10 +45,10 @@ export default async function FeedPage() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: dbPosts }, { data: dbMembers }, { data: followRows }] = await Promise.all([
+  const [{ data: dbPosts }, { data: dbMembers }, { data: followRows }, { data: likeRows }] = await Promise.all([
     supabase
       .from("posts")
-      .select("id, title, content, created_at, categories(name), profiles!posts_user_id_fkey(username, display_name)")
+      .select("id, title, content, created_at, user_id, categories(name), profiles!posts_user_id_fkey(username, display_name)")
       .order("created_at", { ascending: false })
       .limit(25),
     supabase
@@ -59,24 +59,35 @@ export default async function FeedPage() {
     user
       ? supabase.from("follows").select("following_id").eq("follower_id", user.id)
       : Promise.resolve({ data: [] as { following_id: string }[] }),
+    user
+      ? supabase.from("likes").select("post_id").eq("user_id", user.id)
+      : Promise.resolve({ data: [] as { post_id: string }[] }),
   ]);
 
   const followingIds = new Set((followRows || []).map((row) => row.following_id));
+  const likedPostIds = new Set((likeRows || []).map((row) => row.post_id));
 
   const posts = dbPosts && dbPosts.length > 0
-    ? dbPosts.map((post) => {
+    ? await Promise.all(dbPosts.map(async (post) => {
         const author = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
         const category = Array.isArray(post.categories) ? post.categories[0] : post.categories;
+        const [{ count: likeCount }, { count: commentCount }] = await Promise.all([
+          supabase.from("likes").select("id", { count: "exact", head: true }).eq("post_id", post.id),
+          supabase.from("comments").select("id", { count: "exact", head: true }).eq("post_id", post.id),
+        ]);
         return {
           id: post.id,
           title: post.title,
           category: category?.name || "General Preparedness",
           author: author?.username || "member",
+          authorDisplayName: author?.display_name || author?.username || "member",
           excerpt: post.content,
-          comments: 0,
-          likes: 0,
+          comments: commentCount || 0,
+          likes: likeCount || 0,
+          initialLiked: likedPostIds.has(post.id),
+          isOwner: user?.id === post.user_id,
         };
-      })
+      }))
     : samplePosts;
 
   const dynamicMembers = (dbMembers || []).map((member) => formatMember({
@@ -104,7 +115,10 @@ export default async function FeedPage() {
           </div>
 
           <div className="card">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Following</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Following</h2>
+              <Link href={user ? `/profile/${shownMembers.find((member) => member.isCurrentUser)?.username || ""}/following` : "/members"} className="text-xs text-muted hover:text-text">View all</Link>
+            </div>
             <div className="mt-4 space-y-3">
               {followedMembers.length ? followedMembers.slice(0, 4).map((member) => (
                 <Link key={member.username} href={`/profile/${member.username}`} className="block rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted transition hover:text-text">
