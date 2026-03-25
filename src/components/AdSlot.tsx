@@ -3,7 +3,7 @@
 type AdSlotProps = {
   className?: string;
   title?: string;
-  variant?: "wide" | "rail" | "card";
+  variant?: "wide" | "rail" | "card" | "sidebar";
 };
 
 export default function AdSlot({
@@ -16,6 +16,8 @@ export default function AdSlot({
       ? "min-h-[140px]"
       : variant === "rail"
       ? "min-h-[280px]"
+      : variant === "sidebar"
+      ? "min-h-[320px]"
       : "min-h-[120px]";
 
   return (
