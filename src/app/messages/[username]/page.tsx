@@ -87,20 +87,19 @@ export default async function MessageThreadPage({ params }: MessageThreadPagePro
               </div>
             </div>
 
-            <div className="space-y-3">
-              {messages?.length ? messages.map((message) => {
-                const isMine = message.sender_id === user.id;
-                return (
-                  <div key={message.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${isMine ? "bg-brand text-black" : "bg-panelSoft text-text"}`}>
-                      <p>{message.content}</p>
-                      <div className={`mt-2 text-[11px] ${isMine ? "text-black/70" : "text-muted"}`}>
-                        {formatMessageTime(message.created_at)}{isMine ? message.read_at ? " • Read" : " • Sent" : ""}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }) : <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted">No messages yet. Start the conversation below.</div>}
+            {messages?.length ? messages.map((message) => {
+  const isMine = message.sender_id === user.id;
+  return (
+    <div key={message.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+      <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${isMine ? "bg-emerald-700 text-white" : "bg-panelSoft text-text"}`}>
+        <p>{message.content}</p>
+        <div className={`mt-2 text-[11px] ${isMine ? "text-white/80" : "text-muted"}`}>
+          {formatMessageTime(message.created_at)}{isMine ? message.read_at ? " • Read" : " • Sent" : ""}
+        </div>
+      </div>
+    </div>
+  );
+}) : <div className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted">No messages yet. Start the conversation below.</div>}
             </div>
           </div>
 
