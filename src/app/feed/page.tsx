@@ -2,8 +2,16 @@ import Link from "next/link";
 import AdSlot from "@/components/AdSlot";
 import MemberCard from "@/components/MemberCard";
 import PostCard from "@/components/PostCard";
-import { categories, rightRailTopics, samplePosts, memberProfiles, type MemberProfile } from "@/lib/site";
+import { samplePosts, memberProfiles, type MemberProfile } from "@/lib/site";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+type FeedPageProps = {
+  searchParams?: Promise<{
+    view?: string;
+    category?: string;
+    topic?: string;
+  }>;
+};
 
 function formatMember(member: {
   id?: string;
@@ -41,16 +49,71 @@ function formatMember(member: {
   };
 }
 
-export default async function FeedPage() {
+function buildFeedHref(view: string, category?: string, topic?: string) {
+  const params = new URLSearchParams();
+  if (view && view !== "for-you") params.set("view", view);
+  if (category) params.set("category", category);
+  if (topic) params.set("topic", topic);
+  const query = params.toString();
+  return query ? `/feed?${query}` : "/feed";
+}
+
+function getFeedHeading(view: string, categoryName?: string, topic?: string) {
+  if (categoryName) {
+    return {
+      title: categoryName,
+      description: `Posts currently tagged in ${categoryName}.`,
+    };
+  }
+
+  if (topic) {
+    return {
+      title: `#${topic}`,
+      description: `Posts matching the trending topic #${topic}.`,
+    };
+  }
+
+  switch (view) {
+    case "latest":
+      return {
+        title: "Latest posts",
+        description: "The most recent preparedness posts from across the network.",
+      };
+    case "following":
+      return {
+        title: "Following",
+        description: "Fresh posts from members you follow.",
+      };
+    case "saved":
+      return {
+        title: "Saved",
+        description: "Posts you have liked so you can come back to them quickly.",
+      };
+    default:
+      return {
+        title: "Home feed",
+        description: "The latest preparedness posts from across the network.",
+      };
+  }
+}
+
+export default async function FeedPage({ searchParams }: FeedPageProps) {
+  const params = (await searchParams) ?? {};
+  const activeView = ["for-you", "latest", "following", "saved"].includes((params.view || "").toLowerCase())
+    ? (params.view || "for-you").toLowerCase()
+    : "for-you";
+  const activeCategory = params.category?.toLowerCase();
+  const activeTopic = params.topic?.toLowerCase();
+
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: dbPosts }, { data: dbMembers }, { data: followRows }, { data: likeRows }] = await Promise.all([
+  const [{ data: dbPosts }, { data: dbMembers }, { data: followRows }, { data: likeRows }, { data: dbCategories }, { data: dbGroups }] = await Promise.all([
     supabase
       .from("posts")
-      .select("id, title, content, created_at, user_id, groups(name, slug), categories(name), profiles!posts_user_id_fkey(username, display_name)")
+      .select("id, title, content, created_at, user_id, groups(name, slug), categories(name, slug), profiles!posts_user_id_fkey(username, display_name)")
       .order("created_at", { ascending: false })
-      .limit(25),
+      .limit(40),
     supabase
       .from("profiles")
       .select("id, username, display_name, bio, location, avatar_url, cover_url, interests, created_at")
@@ -62,6 +125,8 @@ export default async function FeedPage() {
     user
       ? supabase.from("likes").select("post_id").eq("user_id", user.id)
       : Promise.resolve({ data: [] as { post_id: string }[] }),
+    supabase.from("categories").select("name, slug").order("name"),
+    supabase.from("groups").select("name, slug").order("created_at", { ascending: false }).limit(6),
   ]);
 
   const followingIds = new Set((followRows || []).map((row) => row.following_id));
@@ -80,6 +145,7 @@ export default async function FeedPage() {
           id: post.id,
           title: post.title,
           category: category?.name || "General Preparedness",
+          categorySlug: category?.slug || undefined,
           author: author?.username || "member",
           authorDisplayName: author?.display_name || author?.username || "member",
           excerpt: post.content,
@@ -89,9 +155,94 @@ export default async function FeedPage() {
           isOwner: user?.id === post.user_id,
           groupName: group?.name || undefined,
           groupSlug: group?.slug || undefined,
+          authorId: post.user_id,
+          createdAt: post.created_at,
         };
       }))
-    : samplePosts;
+    : samplePosts.map((post) => ({
+        ...post,
+        categorySlug: post.category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+        authorId: "",
+        createdAt: new Date().toISOString(),
+      }));
+
+  const categoryCounts = new Map<string, { name: string; slug: string; count: number }>();
+  posts.forEach((post) => {
+    const slug = post.categorySlug || post.category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const existing = categoryCounts.get(slug);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      categoryCounts.set(slug, { name: post.category, slug, count: 1 });
+    }
+  });
+
+  const categories = (dbCategories || []).map((category) => ({
+    ...category,
+    count: categoryCounts.get(category.slug)?.count || 0,
+  })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
+  const topGroups = (dbGroups || []).map((group) => ({
+    label: group.name,
+    href: `/groups/${group.slug}`,
+    count: posts.filter((post) => post.groupSlug === group.slug).length,
+  })).filter((group) => group.count > 0);
+
+  const topCategories = [...categoryCounts.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3)
+    .map((category) => ({
+      label: category.name,
+      href: buildFeedHref("for-you", category.slug),
+      count: category.count,
+    }));
+
+  const interestTopics = (dbMembers || [])
+    .flatMap((member) => member.interests || [])
+    .reduce((acc, interest) => {
+      const normalized = interest.toLowerCase();
+      acc.set(normalized, (acc.get(normalized) || 0) + 1);
+      return acc;
+    }, new Map<string, number>());
+
+  const interestTopicLinks = [...interestTopics.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([interest, count]) => ({
+      label: interest,
+      href: buildFeedHref("for-you", undefined, interest),
+      count,
+    }));
+
+  const trendingTopics = [...topCategories, ...topGroups, ...interestTopicLinks].slice(0, 6);
+
+  let filteredPosts = posts;
+  if (activeCategory) {
+    filteredPosts = filteredPosts.filter((post) => post.categorySlug === activeCategory);
+  }
+  if (activeTopic) {
+    filteredPosts = filteredPosts.filter((post) => {
+      const haystack = `${post.title} ${post.excerpt} ${post.category} ${post.groupName || ""}`.toLowerCase();
+      return haystack.includes(activeTopic);
+    });
+  }
+
+  switch (activeView) {
+    case "following":
+      filteredPosts = user
+        ? filteredPosts.filter((post) => post.authorId && followingIds.has(post.authorId))
+        : [];
+      break;
+    case "saved":
+      filteredPosts = user
+        ? filteredPosts.filter((post) => likedPostIds.has(post.id))
+        : [];
+      break;
+    case "latest":
+    case "for-you":
+    default:
+      break;
+  }
 
   const dynamicMembers = (dbMembers || []).map((member) => formatMember({
     ...member,
@@ -102,6 +253,15 @@ export default async function FeedPage() {
   const shownMembers = dynamicMembers.length > 0 ? dynamicMembers : memberProfiles;
   const followedMembers = shownMembers.filter((member) => member.isFollowing);
   const suggestedMembers = shownMembers.filter((member) => !member.isFollowing && !member.isCurrentUser).slice(0, 5);
+  const currentMember = shownMembers.find((member) => member.isCurrentUser);
+  const feedHeading = getFeedHeading(activeView, categories.find((category) => category.slug === activeCategory)?.name, activeTopic);
+
+  const browseLinks = [
+    { key: "for-you", label: "For You", href: buildFeedHref("for-you", activeCategory, activeTopic) },
+    { key: "latest", label: "Latest", href: buildFeedHref("latest", activeCategory, activeTopic) },
+    { key: "following", label: "Following", href: buildFeedHref("following", activeCategory, activeTopic) },
+    { key: "saved", label: "Saved", href: buildFeedHref("saved", activeCategory, activeTopic) },
+  ];
 
   return (
     <main className="container-shell py-8 md:py-10">
@@ -110,17 +270,25 @@ export default async function FeedPage() {
           <div className="card">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Browse</h2>
             <div className="mt-4 space-y-2 text-sm">
-              <div className="rounded-xl bg-panelSoft px-3 py-3 text-text">For You</div>
-              <div className="rounded-xl bg-panelSoft px-3 py-3 text-muted">Latest</div>
-              <div className="rounded-xl bg-panelSoft px-3 py-3 text-muted">Following</div>
-              <div className="rounded-xl bg-panelSoft px-3 py-3 text-muted">Saved</div>
+              {browseLinks.map((item) => {
+                const isActive = activeView === item.key;
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    className={`block rounded-xl px-3 py-3 transition ${isActive ? "bg-panelSoft text-text" : "bg-panelSoft/60 text-muted hover:bg-panelSoft hover:text-text"}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
           <div className="card">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Following</h2>
-              <Link href={user ? `/profile/${shownMembers.find((member) => member.isCurrentUser)?.username || ""}/following` : "/members"} className="text-xs text-muted hover:text-text">View all</Link>
+              <Link href={user && currentMember ? `/profile/${currentMember.username}/following` : "/members"} className="text-xs text-muted hover:text-text">View all</Link>
             </div>
             <div className="mt-4 space-y-3">
               {followedMembers.length ? followedMembers.slice(0, 4).map((member) => (
@@ -133,11 +301,23 @@ export default async function FeedPage() {
           </div>
 
           <div className="card">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Categories</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Categories</h2>
+              {(activeCategory || activeTopic) ? <Link href={buildFeedHref(activeView)} className="text-xs text-muted hover:text-text">Clear</Link> : null}
+            </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {categories.slice(0, 6).map((category) => (
-                <span key={category.slug} className="rounded-full border border-border bg-panelSoft px-3 py-2 text-xs text-muted">{category.name}</span>
-              ))}
+              {categories.length ? categories.slice(0, 8).map((category) => {
+                const isActive = activeCategory === category.slug;
+                return (
+                  <Link
+                    key={category.slug}
+                    href={buildFeedHref(activeView, category.slug)}
+                    className={`rounded-full border px-3 py-2 text-xs transition ${isActive ? "border-brand bg-brand/20 text-brand" : "border-border bg-panelSoft text-muted hover:text-text"}`}
+                  >
+                    {category.name} <span className="opacity-70">{category.count}</span>
+                  </Link>
+                );
+              }) : <div className="text-sm text-muted">No categories yet.</div>}
             </div>
           </div>
         </aside>
@@ -146,21 +326,26 @@ export default async function FeedPage() {
           <div className="card">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-bold">Home feed</h1>
-                <p className="mt-2 text-sm text-muted">The latest preparedness posts from across the network.</p>
+                <h1 className="text-2xl font-bold">{feedHeading.title}</h1>
+                <p className="mt-2 text-sm text-muted">{feedHeading.description}</p>
               </div>
-              <Link href="/posts/new" className="button-primary">Create Post</Link>
+              <Link href={activeCategory ? `/posts/new?group=&category=${activeCategory}` : "/posts/new"} className="button-primary">Create Post</Link>
             </div>
           </div>
 
           <AdSlot title="Sponsored" variant="wide" />
 
-          {posts.map((post, index) => (
+          {filteredPosts.length ? filteredPosts.map((post, index) => (
             <div key={post.id} className="space-y-4">
               <PostCard {...post} />
               {index === 1 ? <AdSlot title="Sponsored" variant="wide" /> : null}
             </div>
-          ))}
+          )) : (
+            <div className="card text-sm text-muted">
+              No posts match this view yet.
+              {!user && (activeView === "following" || activeView === "saved") ? " Log in and interact with posts to populate this section." : " Try another browse option or category."}
+            </div>
+          )}
         </section>
 
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
@@ -174,11 +359,16 @@ export default async function FeedPage() {
           <AdSlot title="Sponsored" variant="sidebar" />
 
           <div className="card">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Trending Topics</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Trending Topics</h2>
+              {(activeTopic || activeCategory) ? <Link href={buildFeedHref(activeView)} className="text-xs text-muted hover:text-text">Reset</Link> : null}
+            </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {rightRailTopics.map((topic) => (
-                <span key={topic} className="rounded-full border border-border bg-panelSoft px-3 py-2 text-xs text-muted">#{topic}</span>
-              ))}
+              {trendingTopics.length ? trendingTopics.map((topic) => (
+                <Link key={`${topic.label}-${topic.href}`} href={topic.href} className="rounded-full border border-border bg-panelSoft px-3 py-2 text-xs text-muted transition hover:text-text">
+                  #{topic.label.toLowerCase().replace(/\s+/g, "-")} <span className="opacity-70">{topic.count}</span>
+                </Link>
+              )) : <div className="text-sm text-muted">Trending topics will appear as the network grows.</div>}
             </div>
           </div>
         </aside>
