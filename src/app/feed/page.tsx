@@ -159,9 +159,17 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
           createdAt: post.created_at,
         };
       }))
-    : samplePosts.map((post) => ({
+        : samplePosts.map((post) => ({
         ...post,
-        categorySlug: post.category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+        categorySlug: post.category
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, ""),
+        authorDisplayName: post.author,
+        initialLiked: false,
+        isOwner: false,
+        groupName: undefined,
+        groupSlug: undefined,
         authorId: "",
         createdAt: new Date().toISOString(),
       }));
