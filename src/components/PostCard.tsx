@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getMemberProfile } from "@/lib/site";
 import LikeButton from "@/components/LikeButton";
 import PostOwnerActions from "@/components/PostOwnerActions";
+import ReportPostButton from "@/components/ReportPostButton";
 
 type PostCardProps = {
   id: string;
@@ -63,6 +64,7 @@ export default function PostCard({
         <LikeButton postId={id} initialLiked={initialLiked} initialCount={likes} />
         <Link href={`/posts/${id}`} className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">Comment</Link>
         <Link href={`/posts/${id}`} className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">View Post</Link>
+        {!isOwner ? <ReportPostButton postId={id} compact /> : null}
         <Link href={`/profile/${author}`} className="ml-auto rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">
           View Profile
         </Link>

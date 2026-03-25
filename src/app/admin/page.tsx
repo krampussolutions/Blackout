@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import AdminCommentActions from "@/components/AdminCommentActions";
 import AdminMemberActions from "@/components/AdminMemberActions";
 import AdminPostActions from "@/components/AdminPostActions";
+import AdminReportActions from "@/components/AdminReportActions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function AdminPage() {
@@ -36,6 +37,7 @@ export default async function AdminPage() {
     { data: posts },
     { data: comments },
     { data: members },
+    { data: reports },
     { count: memberCount },
     { count: postCount },
     { count: commentCount },
@@ -55,6 +57,12 @@ export default async function AdminPage() {
       .select("id, username, display_name, location, membership_tier, created_at")
       .order("created_at", { ascending: false })
       .limit(20),
+    supabase
+      .from("post_reports")
+      .select("id, reason, created_at, post_id, posts(title), profiles!post_reports_reporter_id_fkey(username, display_name)")
+      .eq("status", "open")
+      .order("created_at", { ascending: false })
+      .limit(15),
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("posts").select("id", { count: "exact", head: true }),
     supabase.from("comments").select("id", { count: "exact", head: true }),
@@ -162,6 +170,39 @@ export default async function AdminPage() {
               </div>
             </div>
 
+
+            <div className="card space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold">Post reports</h2>
+                <p className="mt-1 text-sm text-muted">Review flagged posts and clear handled reports.</p>
+              </div>
+
+              <div className="space-y-4">
+                {(reports || []).length ? (reports || []).map((report) => {
+                  const reporter = Array.isArray(report.profiles) ? report.profiles[0] : report.profiles;
+                  const post = Array.isArray(report.posts) ? report.posts[0] : report.posts;
+                  return (
+                    <div key={report.id} className="rounded-2xl border border-border bg-panelSoft p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">{post?.title || "Reported post"}</p>
+                          <p className="mt-1 text-xs text-muted">
+                            Reported by {reporter?.display_name || reporter?.username || "Member"}
+                            {report.created_at ? ` • ${new Date(report.created_at).toLocaleString()}` : ""}
+                          </p>
+                        </div>
+                        <AdminReportActions reportId={report.id} />
+                      </div>
+                      {report.reason ? <p className="mt-3 text-sm leading-6 text-muted">{report.reason}</p> : null}
+                      <Link href={`/posts/${report.post_id}`} className="mt-3 inline-flex text-xs font-medium text-muted hover:text-text">
+                        Open reported post
+                      </Link>
+                    </div>
+                  );
+                }) : <div className="rounded-2xl border border-border bg-panelSoft p-4 text-sm text-muted">No open reports.</div>}
+              </div>
+            </div>
+
             <div className="card space-y-4">
               <div>
                 <h2 className="text-xl font-semibold">Member access</h2>
@@ -199,6 +240,16 @@ export default async function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold">Session</h2>
+                  <p className="mt-1 text-sm text-muted">Log out of the moderation session when you are done.</p>
+                </div>
+                <Link href="/settings/profile" className="button-secondary">Profile settings</Link>
               </div>
             </div>
           </aside>

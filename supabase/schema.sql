@@ -62,6 +62,17 @@ create table if not exists public.follows (
   check (follower_id <> following_id)
 );
 
+
+create table if not exists public.post_reports (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references public.posts(id) on delete cascade,
+  reporter_id uuid not null references public.profiles(id) on delete cascade,
+  reason text,
+  status text not null default 'open' check (status in ('open', 'resolved', 'dismissed')),
+  created_at timestamptz default now(),
+  unique(post_id, reporter_id)
+);
+
 insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)
 on conflict (id) do nothing;
@@ -102,6 +113,7 @@ alter table public.posts enable row level security;
 alter table public.comments enable row level security;
 alter table public.likes enable row level security;
 alter table public.follows enable row level security;
+alter table public.post_reports enable row level security;
 
  drop policy if exists "Public profiles are viewable by everyone" on public.profiles;
 drop policy if exists "Categories are readable by everyone" on public.categories;
@@ -123,6 +135,10 @@ drop policy if exists "Users can delete their own comments" on public.comments;
 drop policy if exists "Users can update their own comments" on public.comments;
 drop policy if exists "Authenticated users can follow other users" on public.follows;
 drop policy if exists "Users can unfollow people they follow" on public.follows;
+drop policy if exists "Admins can delete reports" on public.post_reports;
+drop policy if exists "Admins can update reports" on public.post_reports;
+drop policy if exists "Authenticated users can report posts" on public.post_reports;
+drop policy if exists "Post reports are readable by admins" on public.post_reports;
 drop policy if exists "Avatar images are public" on storage.objects;
 drop policy if exists "Authenticated users can upload avatars" on storage.objects;
 drop policy if exists "Authenticated users can update avatars" on storage.objects;
@@ -158,6 +174,27 @@ create policy "Users can delete their own comments" on public.comments for delet
 create policy "Users can update their own comments" on public.comments for update using (auth.uid() = user_id);
 create policy "Authenticated users can follow other users" on public.follows for insert with check (auth.uid() = follower_id);
 create policy "Users can unfollow people they follow" on public.follows for delete using (auth.uid() = follower_id);
+
+
+create policy "Post reports are readable by admins" on public.post_reports for select using (
+  exists (
+    select 1 from public.profiles as admin_profile
+    where admin_profile.id = auth.uid() and admin_profile.membership_tier = 'admin'
+  )
+);
+create policy "Authenticated users can report posts" on public.post_reports for insert with check (auth.uid() = reporter_id);
+create policy "Admins can update reports" on public.post_reports for update using (
+  exists (
+    select 1 from public.profiles as admin_profile
+    where admin_profile.id = auth.uid() and admin_profile.membership_tier = 'admin'
+  )
+);
+create policy "Admins can delete reports" on public.post_reports for delete using (
+  exists (
+    select 1 from public.profiles as admin_profile
+    where admin_profile.id = auth.uid() and admin_profile.membership_tier = 'admin'
+  )
+);
 
 create policy "Avatar images are public" on storage.objects for select using (bucket_id = 'avatars');
 create policy "Authenticated users can upload avatars" on storage.objects for insert with check (

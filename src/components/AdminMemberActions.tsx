@@ -40,6 +40,24 @@ export default function AdminMemberActions({
     router.refresh();
   }
 
+  async function removeUser() {
+    if (loading || isCurrentAdmin) return;
+    const confirmed = window.confirm(`Remove @${username} from Blackout Network? This deletes their account, profile, posts, likes, and follows.`);
+    if (!confirmed) return;
+
+    setLoading(true);
+    const response = await fetch(`/api/admin/users/${memberId}`, { method: "DELETE" });
+    const result = await response.json().catch(() => ({}));
+    setLoading(false);
+
+    if (!response.ok) {
+      window.alert(result.error || "Could not remove user.");
+      return;
+    }
+
+    router.refresh();
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
       {membershipTier === "admin" ? (
@@ -62,6 +80,16 @@ export default function AdminMemberActions({
           {loading ? "Saving..." : "Promote admin"}
         </button>
       )}
+
+      <button
+        type="button"
+        className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 disabled:opacity-60"
+        onClick={removeUser}
+        disabled={loading || isCurrentAdmin}
+        title={isCurrentAdmin ? "You cannot remove your own account here." : `Remove ${username}`}
+      >
+        {loading ? "Working..." : "Remove user"}
+      </button>
     </div>
   );
 }

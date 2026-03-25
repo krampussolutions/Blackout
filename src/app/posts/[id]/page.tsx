@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import CommentSection from "@/components/CommentSection";
 import LikeButton from "@/components/LikeButton";
 import PostOwnerActions from "@/components/PostOwnerActions";
+import ReportPostButton from "@/components/ReportPostButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,6 +59,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             <LikeButton postId={post.id} initialLiked={Boolean(likeRow)} initialCount={likeCount || 0} />
             <span>{commentCount || 0} comments</span>
             <Link href={`/profile/${authorUsername}`} className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">View Profile</Link>
+            {!isOwner ? <ReportPostButton postId={post.id} /> : null}
           </div>
         </article>
 

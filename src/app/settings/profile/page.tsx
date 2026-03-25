@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import EditProfileForm from "@/components/EditProfileForm";
+import LogoutButton from "@/components/LogoutButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function EditProfilePage() {
@@ -34,9 +35,12 @@ export default async function EditProfilePage() {
                 Update your public profile, tighten your bio, and refresh avatar or cover images.
               </p>
             </div>
-            <Link href={`/profile/${profile.username}`} className="button-secondary">
-              View profile
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href={`/profile/${profile.username}`} className="button-secondary">
+                View profile
+              </Link>
+              <LogoutButton />
+            </div>
           </div>
         </div>
 
