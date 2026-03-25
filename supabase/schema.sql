@@ -235,3 +235,32 @@ create policy "Admins can delete any comment" on public.comments for delete usin
     where admin_profile.id = auth.uid() and admin_profile.membership_tier = 'admin'
   )
 );
+
+
+-- Messaging
+create table if not exists public.direct_messages (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid not null references public.profiles(id) on delete cascade,
+  recipient_id uuid not null references public.profiles(id) on delete cascade,
+  content text not null check (char_length(content) between 1 and 2000),
+  read_at timestamptz,
+  created_at timestamptz default now(),
+  check (sender_id <> recipient_id)
+);
+create index if not exists direct_messages_sender_created_idx on public.direct_messages (sender_id, created_at desc);
+create index if not exists direct_messages_recipient_created_idx on public.direct_messages (recipient_id, created_at desc);
+alter table public.direct_messages enable row level security;
+drop policy if exists "Participants can read their messages" on public.direct_messages;
+drop policy if exists "Authenticated users can send messages" on public.direct_messages;
+drop policy if exists "Recipients can mark messages as read" on public.direct_messages;
+create policy "Participants can read their messages" on public.direct_messages for select using (
+  auth.uid() = sender_id or auth.uid() = recipient_id
+);
+create policy "Authenticated users can send messages" on public.direct_messages for insert with check (
+  auth.uid() = sender_id
+);
+create policy "Recipients can mark messages as read" on public.direct_messages for update using (
+  auth.uid() = recipient_id
+) with check (
+  auth.uid() = recipient_id
+);

@@ -5,6 +5,7 @@ const protectedRoutes = [
   "/feed",
   "/groups",
   "/members",
+  "/messages",
   "/posts/new",
   "/settings",
   "/admin",
@@ -12,9 +13,7 @@ const protectedRoutes = [
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   });
 
   const supabase = createServerClient(
@@ -25,37 +24,19 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(
-          cookiesToSet: Array<{
-            name: string;
-            value: string;
-            options?: CookieOptions;
-          }>
-        ) {
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
+          response = NextResponse.next({ request: { headers: request.headers } });
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
         },
       },
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const isProtected = protectedRoutes.some(
-    (route) =>
-      request.nextUrl.pathname === route ||
-      request.nextUrl.pathname.startsWith(`${route}/`)
+    (route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(`${route}/`)
   );
 
   if (isProtected && !user) {
@@ -72,6 +53,7 @@ export const config = {
     "/feed/:path*",
     "/groups/:path*",
     "/members/:path*",
+    "/messages/:path*",
     "/posts/new/:path*",
     "/settings/:path*",
     "/admin/:path*",

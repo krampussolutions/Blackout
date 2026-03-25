@@ -39,7 +39,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
             {profile.isCurrentUser ? (
               <Link href="/settings/profile" className="button-secondary">Edit Profile</Link>
             ) : (
-              <button type="button" className="button-secondary">Message</button>
+              <Link href={`/messages/${profile.username}`} className="button-secondary">Message</Link>
             )}
             <FollowButton
               targetUserId={profile.id}
