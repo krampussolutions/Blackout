@@ -1,85 +1,33 @@
-"use client";
+import LoginForm from "@/components/LoginForm";
 
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+type LoginPageProps = {
+  searchParams?: Promise<{
+    redirect_to?: string;
+    message?: string;
+  }>;
+};
 
-export default function LoginPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/feed";
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const { error: loginError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-
-    if (loginError) {
-      setError(loginError.message);
-      setLoading(false);
-      return;
-    }
-
-    router.push(next);
-    router.refresh();
-  }
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = (await searchParams) ?? {};
+  const redirectTo = params.redirect_to || "/feed";
+  const message = params.message || "";
 
   return (
-    <main className="container-shell max-w-xl py-14">
-      <div className="card">
-        <h1 className="text-3xl font-bold">Login</h1>
-        <p className="mt-2 text-muted">Access your preparedness network account.</p>
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="mb-2 block text-sm font-medium">Email</label>
-            <input
-              type="email"
-              className="input"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              required
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium">Password</label>
-            <input
-              type="password"
-              className="input"
-              placeholder="••••••••"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-              required
-            />
-          </div>
-
-          {error ? <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div> : null}
-
-          <button type="submit" className="button-primary w-full" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
-          <p>
-            Need an account? <Link href="/signup" className="text-text underline underline-offset-4">Join now</Link>
+    <main className="container-shell py-10">
+      <div className="mx-auto max-w-md">
+        <div className="card mb-4">
+          <h1 className="text-2xl font-semibold">Log in</h1>
+          <p className="mt-2 text-sm text-muted">
+            Access your Blackout Network account.
           </p>
-          <Link href="/forgot-password" className="text-text underline underline-offset-4">Forgot password?</Link>
+          {message ? (
+            <p className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+              {message}
+            </p>
+          ) : null}
         </div>
+
+        <LoginForm redirectTo={redirectTo} />
       </div>
     </main>
   );
