@@ -1,14 +1,38 @@
-export default function AdSlot({ className = '' }: { className?: string }) {
+"use client";
+
+type AdSlotProps = {
+  className?: string;
+  title?: string;
+  variant?: "wide" | "rail" | "card";
+};
+
+export default function AdSlot({
+  className = "",
+  title = "Sponsored",
+  variant = "card",
+}: AdSlotProps) {
+  const variantClasses =
+    variant === "wide"
+      ? "min-h-[140px]"
+      : variant === "rail"
+      ? "min-h-[280px]"
+      : "min-h-[120px]";
+
   return (
-    <div className={`rounded-2xl border border-dashed border-border bg-panel p-5 ${className}`.trim()}>
-      <div className="h-3 w-16 rounded-full bg-panelSoft" />
-      <div className="mt-4 h-6 w-40 rounded-full bg-panelSoft" />
-      <div className="mt-3 space-y-2">
-        <div className="h-3 w-full rounded-full bg-panelSoft" />
-        <div className="h-3 w-5/6 rounded-full bg-panelSoft" />
+    <div
+      className={`card overflow-hidden border border-white/10 bg-white/5 ${variantClasses} ${className}`}
+    >
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
+        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">
+          {title}
+        </span>
+        <span className="text-[10px] uppercase tracking-[0.2em] text-white/30">
+          Ad
+        </span>
       </div>
-      <div className="mt-4 rounded-xl border border-border bg-panelSoft px-4 py-8 text-center text-xs uppercase tracking-[0.18em] text-muted">
-        Ad block
+
+      <div className="flex min-h-[90px] items-center justify-center px-4 py-6 text-center text-sm text-white/40">
+        AdSense placement area
       </div>
     </div>
   );
