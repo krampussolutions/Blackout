@@ -1,7 +1,8 @@
+import Link from "next/link";
 import AdSlot from "@/components/AdSlot";
 import MemberCard from "@/components/MemberCard";
 import PostCard from "@/components/PostCard";
-import { categories, groups, rightRailTopics, samplePosts, memberProfiles, type MemberProfile } from "@/lib/site";
+import { categories, rightRailTopics, samplePosts, memberProfiles, type MemberProfile } from "@/lib/site";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function formatMember(member: {
@@ -10,6 +11,9 @@ function formatMember(member: {
   display_name?: string | null;
   bio?: string | null;
   location?: string | null;
+  avatar_url?: string | null;
+  cover_url?: string | null;
+  interests?: string[] | null;
   created_at?: string | null;
   followers?: number;
   following?: number;
@@ -24,8 +28,10 @@ function formatMember(member: {
     bio: member.bio || "Preparedness-minded member.",
     location: member.location || "Location not set",
     avatar: member.username.slice(0, 2).toUpperCase(),
+    avatarUrl: member.avatar_url,
     cover: "from-slate-700 via-slate-800 to-zinc-950",
-    interests: ["Preparedness"],
+    coverUrl: member.cover_url,
+    interests: member.interests?.length ? member.interests : ["Preparedness"],
     followers: member.followers || 0,
     following: member.following || 0,
     posts: member.posts || 0,
@@ -47,7 +53,7 @@ export default async function FeedPage() {
       .limit(25),
     supabase
       .from("profiles")
-      .select("id, username, display_name, bio, location, created_at")
+      .select("id, username, display_name, bio, location, avatar_url, cover_url, interests, created_at")
       .order("created_at", { ascending: false })
       .limit(8),
     user
@@ -97,40 +103,45 @@ export default async function FeedPage() {
             </div>
           </div>
 
-          <AdSlot label="Suggested Content" />
-
           <div className="card">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Following</h2>
             <div className="mt-4 space-y-3">
-              {followedMembers.length > 0 ? followedMembers.map((member) => (
-                <MemberCard key={member.username} member={member} compact />
-              )) : <div className="rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted">Follow members to curate this feed.</div>}
+              {followedMembers.length ? followedMembers.slice(0, 4).map((member) => (
+                <Link key={member.username} href={`/profile/${member.username}`} className="block rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted transition hover:text-text">
+                  <div className="font-medium text-text">{member.displayName}</div>
+                  <div className="text-xs text-muted">@{member.username}</div>
+                </Link>
+              )) : <div className="rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted">Follow a few members to build your network.</div>}
             </div>
           </div>
 
           <div className="card">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Categories</h2>
-            <div className="mt-4 space-y-2 text-sm text-muted">
-              {categories.map((category) => (
-                <div key={category.slug} className="rounded-xl bg-panelSoft px-3 py-3">{category.name}</div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {categories.slice(0, 6).map((category) => (
+                <span key={category.slug} className="rounded-full border border-border bg-panelSoft px-3 py-2 text-xs text-muted">{category.name}</span>
               ))}
             </div>
           </div>
-
-          <AdSlot label="Sponsored" />
         </aside>
 
-        <section className="min-w-0 space-y-4">
+        <section className="space-y-4">
           <div className="card">
-            <h1 className="text-2xl font-bold">Home Feed</h1>
-            <p className="mt-2 text-sm text-muted">Latest posts from the network, with your follow graph and profile activity baked in.</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-bold">Home feed</h1>
+                <p className="mt-2 text-sm text-muted">The latest preparedness posts from across the network.</p>
+              </div>
+              <Link href="/posts/new" className="button-primary">Create Post</Link>
+            </div>
           </div>
+
+          <AdSlot title="Sponsored" variant="wide" />
 
           {posts.map((post, index) => (
             <div key={post.id} className="space-y-4">
               <PostCard {...post} />
-              {index === 0 ? <AdSlot label="Sponsored" /> : null}
-              {index === 3 ? <AdSlot label="Recommended" /> : null}
+              {index === 1 ? <AdSlot title="Sponsored" variant="wide" /> : null}
             </div>
           ))}
         </section>
@@ -139,31 +150,17 @@ export default async function FeedPage() {
           <div className="card">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Suggested Members</h2>
             <div className="mt-4 space-y-3">
-              {suggestedMembers.map((member) => (
-                <MemberCard key={member.username} member={member} compact />
-              ))}
+              {suggestedMembers.map((member) => <MemberCard key={member.username} member={member} compact />)}
             </div>
           </div>
 
-          <div className="card">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Groups</h2>
-            <div className="mt-4 space-y-3">
-              {groups.map((group) => (
-                <div key={group.name} className="rounded-xl border border-border bg-panelSoft px-4 py-4">
-                  <div className="font-medium text-text">{group.name}</div>
-                  <p className="mt-1 text-xs leading-5 text-muted">{group.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <AdSlot title="Sponsored" variant="sidebar" />
 
           <div className="card">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Trending</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Trending Topics</h2>
             <div className="mt-4 flex flex-wrap gap-2">
               {rightRailTopics.map((topic) => (
-                <span key={topic} className="rounded-full border border-border bg-panelSoft px-3 py-2 text-xs text-muted">
-                  {topic}
-                </span>
+                <span key={topic} className="rounded-full border border-border bg-panelSoft px-3 py-2 text-xs text-muted">#{topic}</span>
               ))}
             </div>
           </div>

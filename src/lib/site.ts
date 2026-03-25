@@ -12,7 +12,9 @@ export type MemberProfile = {
   bio: string;
   location: string;
   avatar: string;
+  avatarUrl?: string | null;
   cover: string;
+  coverUrl?: string | null;
   interests: string[];
   followers: number;
   following: number;
@@ -20,6 +22,7 @@ export type MemberProfile = {
   joinedLabel: string;
   isFollowing?: boolean;
   isCurrentUser?: boolean;
+  membershipTier?: string;
 };
 
 export const categories = [

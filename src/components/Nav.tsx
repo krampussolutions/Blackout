@@ -15,14 +15,16 @@ export default async function Nav() {
   const { data: { user } } = await supabase.auth.getUser();
 
   let profileUsername: string | null = null;
+  let membershipTier: string | null = null;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("username")
+      .select("username, membership_tier")
       .eq("id", user.id)
       .maybeSingle();
 
     profileUsername = profile?.username || (typeof user.user_metadata?.username === "string" ? user.user_metadata.username : null);
+    membershipTier = profile?.membership_tier || null;
   }
 
   return (
@@ -57,6 +59,14 @@ export default async function Nav() {
               >
                 Profile
               </Link>
+              <Link href="/settings/profile" className="rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panelSoft hover:text-text">
+                Settings
+              </Link>
+              {membershipTier === "admin" ? (
+                <Link href="/admin" className="rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panelSoft hover:text-text">
+                  Admin
+                </Link>
+              ) : null}
               <LogoutButton />
             </>
           ) : (

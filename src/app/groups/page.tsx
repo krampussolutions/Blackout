@@ -1,4 +1,3 @@
-import AdSlot from "@/components/AdSlot";
 import { groups } from "@/lib/site";
 
 export default function GroupsPage() {
@@ -10,8 +9,6 @@ export default function GroupsPage() {
           <p className="mt-2 text-muted">Topic-based spaces for outages, off-grid builds, food storage, comms, and more.</p>
         </div>
 
-        <AdSlot label="Sponsored" />
-
         <div className="grid gap-4 md:grid-cols-2">
           {groups.map((group) => (
             <div key={group.name} className="card">
@@ -21,8 +18,6 @@ export default function GroupsPage() {
             </div>
           ))}
         </div>
-
-        <AdSlot label="Preparedness Sponsors" />
       </div>
     </main>
   );

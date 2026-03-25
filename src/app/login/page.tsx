@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/feed";
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   const [email, setEmail] = useState("");
@@ -30,10 +32,7 @@ export default function LoginPage() {
       return;
     }
 
-    const { data: userData } = await supabase.auth.getUser();
-    const username = userData.user?.user_metadata?.username as string | undefined;
-
-    router.push(username ? `/profile/${username}` : "/feed");
+    router.push(next);
     router.refresh();
   }
 
@@ -75,9 +74,12 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-sm text-muted">
-          Need an account? <Link href="/signup" className="text-text underline underline-offset-4">Join now</Link>
-        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted">
+          <p>
+            Need an account? <Link href="/signup" className="text-text underline underline-offset-4">Join now</Link>
+          </p>
+          <Link href="/forgot-password" className="text-text underline underline-offset-4">Forgot password?</Link>
+        </div>
       </div>
     </main>
   );

@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import AdSlot from "@/components/AdSlot";
 import PostCard from "@/components/PostCard";
 import ProfileHeader from "@/components/ProfileHeader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -16,26 +15,46 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: dbProfile } = await supabase
-    .from("profiles")
-    .select("id, username, display_name, bio, location, created_at")
-    .ilike("username", username)
-    .maybeSingle();
 
-  const [{ count: followerCount }, { count: followingCount }, { count: postCount }, { data: followRow }, { data: dbPosts }] = dbProfile?.id
-    ? await Promise.all([
-        supabase.from("follows").select("id", { count: "exact", head: true }).eq("following_id", dbProfile.id),
-        supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", dbProfile.id),
-        supabase.from("posts").select("id", { count: "exact", head: true }).eq("user_id", dbProfile.id),
-        user ? supabase.from("follows").select("id").eq("follower_id", user.id).eq("following_id", dbProfile.id).maybeSingle() : Promise.resolve({ data: null }),
-        supabase
-          .from("posts")
-          .select("id, title, content, created_at, categories(name)")
-          .eq("user_id", dbProfile.id)
-          .order("created_at", { ascending: false })
-          .limit(10),
-      ])
-    : [{ count: 0 }, { count: 0 }, { count: 0 }, { data: null }, { data: null }];
+  const [{ data: dbProfile, error: profileError }, { data: dbPosts }, { data: followRow }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, username, display_name, bio, location, avatar_url, cover_url, interests, membership_tier, created_at")
+      .ilike("username", username)
+      .maybeSingle(),
+    supabase
+      .from("posts")
+      .select("id, title, content, created_at, categories(name), user_id")
+      .order("created_at", { ascending: false })
+      .limit(20),
+    user
+      ? supabase.from("follows").select("id").eq("follower_id", user.id).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+
+  if (profileError) {
+    console.error("Profile query error:", profileError);
+  }
+
+  let followerCount = 0;
+  let followingCount = 0;
+  let postCount = 0;
+  let isFollowing = false;
+
+  if (dbProfile?.id) {
+    const [{ count: followers }, { count: following }, { count: posts }, { data: isFollowingRow }] = await Promise.all([
+      supabase.from("follows").select("id", { count: "exact", head: true }).eq("following_id", dbProfile.id),
+      supabase.from("follows").select("id", { count: "exact", head: true }).eq("follower_id", dbProfile.id),
+      supabase.from("posts").select("id", { count: "exact", head: true }).eq("user_id", dbProfile.id),
+      user && user.id !== dbProfile.id
+        ? supabase.from("follows").select("id").eq("follower_id", user.id).eq("following_id", dbProfile.id).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+    followerCount = followers || 0;
+    followingCount = following || 0;
+    postCount = posts || 0;
+    isFollowing = Boolean(isFollowingRow);
+  }
 
   const profile: MemberProfile | null = dbProfile
     ? {
@@ -45,16 +64,19 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         bio: dbProfile.bio || "New Blackout Network member.",
         location: dbProfile.location || "Location not set",
         avatar: dbProfile.username.slice(0, 2).toUpperCase(),
-        cover: sampleProfile?.cover || "from-slate-700 via-slate-800 to-zinc-950",
-        interests: sampleProfile?.interests || ["Preparedness"],
-        followers: followerCount || 0,
-        following: followingCount || 0,
-        posts: postCount || 0,
+        avatarUrl: dbProfile.avatar_url,
+        cover: "from-slate-700 via-slate-800 to-zinc-950",
+        coverUrl: dbProfile.cover_url,
+        interests: dbProfile.interests?.length ? dbProfile.interests : ["Preparedness"],
+        followers: followerCount,
+        following: followingCount,
+        posts: postCount,
         joinedLabel: dbProfile.created_at
           ? `Joined ${new Date(dbProfile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}`
           : "Joined recently",
-        isFollowing: Boolean(followRow),
+        isFollowing,
         isCurrentUser: user?.id === dbProfile.id,
+        membershipTier: dbProfile.membership_tier,
       }
     : sampleProfile ?? null;
 
@@ -64,8 +86,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   let posts = samplePosts.filter((post) => post.author.toLowerCase() === username);
 
-  if (dbPosts && dbPosts.length > 0) {
-    posts = dbPosts.map((post) => ({
+  const memberPosts = (dbPosts || []).filter((post) => post.user_id === dbProfile?.id);
+  if (memberPosts.length > 0) {
+    posts = memberPosts.map((post) => ({
       id: post.id,
       title: post.title,
       category: (Array.isArray(post.categories) ? post.categories[0]?.name : (post.categories as { name?: string } | null)?.name) || "General Preparedness",
@@ -88,9 +111,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <p className="mt-3 text-sm leading-6 text-muted">{profile.bio}</p>
               <div className="mt-4 text-sm text-muted">{profile.location}</div>
               <div className="mt-2 text-sm text-muted">{profile.joinedLabel}</div>
-
-            <AdSlot label="Sponsored" />
-          </div>
+            </div>
 
             <div className="card">
               <h2 className="text-lg font-semibold">Following</h2>
@@ -106,12 +127,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <p className="mt-2 text-sm text-muted">Recent activity from {profile.displayName}.</p>
             </div>
 
-            {posts.length ? posts.map((post, index) => (
-              <div key={post.id} className="space-y-4">
-                <PostCard {...post} />
-                {index === 1 ? <AdSlot label="Recommended" /> : null}
-              </div>
-            )) : (
+            {posts.length ? posts.map((post) => <PostCard key={post.id} {...post} />) : (
               <div className="card text-sm text-muted">No posts yet.</div>
             )}
           </section>

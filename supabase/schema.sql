@@ -6,10 +6,15 @@ create table if not exists public.profiles (
   display_name text,
   bio text,
   avatar_url text,
+  cover_url text,
   location text,
+  interests text[] default '{}'::text[],
   membership_tier text default 'free' check (membership_tier in ('free', 'premium', 'admin')),
   created_at timestamptz default now()
 );
+
+alter table public.profiles add column if not exists cover_url text;
+alter table public.profiles add column if not exists interests text[] default '{}'::text[];
 
 create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
@@ -57,6 +62,14 @@ create table if not exists public.follows (
   check (follower_id <> following_id)
 );
 
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public)
+values ('covers', 'covers', true)
+on conflict (id) do nothing;
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -90,7 +103,7 @@ alter table public.comments enable row level security;
 alter table public.likes enable row level security;
 alter table public.follows enable row level security;
 
-drop policy if exists "Public profiles are viewable by everyone" on public.profiles;
+ drop policy if exists "Public profiles are viewable by everyone" on public.profiles;
 drop policy if exists "Categories are readable by everyone" on public.categories;
 drop policy if exists "Posts are readable by everyone" on public.posts;
 drop policy if exists "Comments are readable by everyone" on public.comments;
@@ -100,10 +113,20 @@ drop policy if exists "Users can update their own profile" on public.profiles;
 drop policy if exists "Users can insert their own profile" on public.profiles;
 drop policy if exists "Authenticated users can insert posts" on public.posts;
 drop policy if exists "Users can update their own posts" on public.posts;
+drop policy if exists "Users can delete their own posts" on public.posts;
+drop policy if exists "Admins can delete any post" on public.posts;
 drop policy if exists "Authenticated users can insert comments" on public.comments;
 drop policy if exists "Authenticated users can like posts" on public.likes;
 drop policy if exists "Authenticated users can follow other users" on public.follows;
 drop policy if exists "Users can unfollow people they follow" on public.follows;
+drop policy if exists "Avatar images are public" on storage.objects;
+drop policy if exists "Authenticated users can upload avatars" on storage.objects;
+drop policy if exists "Authenticated users can update avatars" on storage.objects;
+drop policy if exists "Authenticated users can delete avatars" on storage.objects;
+drop policy if exists "Cover images are public" on storage.objects;
+drop policy if exists "Authenticated users can upload covers" on storage.objects;
+drop policy if exists "Authenticated users can update covers" on storage.objects;
+drop policy if exists "Authenticated users can delete covers" on storage.objects;
 
 create policy "Public profiles are viewable by everyone" on public.profiles for select using (true);
 create policy "Categories are readable by everyone" on public.categories for select using (true);
@@ -116,7 +139,36 @@ create policy "Users can update their own profile" on public.profiles for update
 create policy "Users can insert their own profile" on public.profiles for insert with check (auth.uid() = id);
 create policy "Authenticated users can insert posts" on public.posts for insert with check (auth.uid() = user_id);
 create policy "Users can update their own posts" on public.posts for update using (auth.uid() = user_id);
+create policy "Users can delete their own posts" on public.posts for delete using (auth.uid() = user_id);
+create policy "Admins can delete any post" on public.posts for delete using (
+  exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.membership_tier = 'admin'
+  )
+);
 create policy "Authenticated users can insert comments" on public.comments for insert with check (auth.uid() = user_id);
 create policy "Authenticated users can like posts" on public.likes for insert with check (auth.uid() = user_id);
 create policy "Authenticated users can follow other users" on public.follows for insert with check (auth.uid() = follower_id);
 create policy "Users can unfollow people they follow" on public.follows for delete using (auth.uid() = follower_id);
+
+create policy "Avatar images are public" on storage.objects for select using (bucket_id = 'avatars');
+create policy "Authenticated users can upload avatars" on storage.objects for insert with check (
+  bucket_id = 'avatars' and auth.role() = 'authenticated' and (storage.foldername(name))[1] = auth.uid()::text
+);
+create policy "Authenticated users can update avatars" on storage.objects for update using (
+  bucket_id = 'avatars' and auth.role() = 'authenticated' and (storage.foldername(name))[1] = auth.uid()::text
+);
+create policy "Authenticated users can delete avatars" on storage.objects for delete using (
+  bucket_id = 'avatars' and auth.role() = 'authenticated' and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+create policy "Cover images are public" on storage.objects for select using (bucket_id = 'covers');
+create policy "Authenticated users can upload covers" on storage.objects for insert with check (
+  bucket_id = 'covers' and auth.role() = 'authenticated' and (storage.foldername(name))[1] = auth.uid()::text
+);
+create policy "Authenticated users can update covers" on storage.objects for update using (
+  bucket_id = 'covers' and auth.role() = 'authenticated' and (storage.foldername(name))[1] = auth.uid()::text
+);
+create policy "Authenticated users can delete covers" on storage.objects for delete using (
+  bucket_id = 'covers' and auth.role() = 'authenticated' and (storage.foldername(name))[1] = auth.uid()::text
+);

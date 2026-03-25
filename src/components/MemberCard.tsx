@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { MemberProfile } from "@/lib/site";
 import FollowButton from "@/components/FollowButton";
@@ -11,8 +12,12 @@ export default function MemberCard({ member, compact = false }: MemberCardProps)
   return (
     <div className={compact ? "rounded-2xl border border-border bg-panelSoft p-4" : "rounded-2xl border border-border bg-panelSoft p-4"}>
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-panel text-sm font-semibold text-text">
-          {member.avatar}
+        <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-panel text-sm font-semibold text-text">
+          {member.avatarUrl ? (
+            <Image src={member.avatarUrl} alt={member.displayName} fill className="object-cover" />
+          ) : (
+            member.avatar
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <Link href={`/profile/${member.username}`} className="block font-semibold text-text hover:underline">
