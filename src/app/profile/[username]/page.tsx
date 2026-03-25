@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import AdSlot from "@/components/AdSlot";
 import PostCard from "@/components/PostCard";
 import ProfileHeader from "@/components/ProfileHeader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -87,7 +88,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <p className="mt-3 text-sm leading-6 text-muted">{profile.bio}</p>
               <div className="mt-4 text-sm text-muted">{profile.location}</div>
               <div className="mt-2 text-sm text-muted">{profile.joinedLabel}</div>
-            </div>
+
+            <AdSlot label="Sponsored" />
+          </div>
 
             <div className="card">
               <h2 className="text-lg font-semibold">Following</h2>
@@ -103,7 +106,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <p className="mt-2 text-sm text-muted">Recent activity from {profile.displayName}.</p>
             </div>
 
-            {posts.length ? posts.map((post) => <PostCard key={post.id} {...post} />) : (
+            {posts.length ? posts.map((post, index) => (
+              <div key={post.id} className="space-y-4">
+                <PostCard {...post} />
+                {index === 1 ? <AdSlot label="Recommended" /> : null}
+              </div>
+            )) : (
               <div className="card text-sm text-muted">No posts yet.</div>
             )}
           </section>

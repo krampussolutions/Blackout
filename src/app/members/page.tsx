@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AdSlot from "@/components/AdSlot";
 import MemberCard from "@/components/MemberCard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { memberProfiles, type MemberProfile } from "@/lib/site";
@@ -58,6 +59,8 @@ export default async function MembersPage() {
           </p>
         </div>
 
+        <AdSlot label="Members Sponsored" />
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {members.map((member) => (
             <div key={member.username} className="card space-y-4">
@@ -68,6 +71,8 @@ export default async function MembersPage() {
             </div>
           ))}
         </div>
+
+        <AdSlot label="Discover More" />
       </div>
     </main>
   );

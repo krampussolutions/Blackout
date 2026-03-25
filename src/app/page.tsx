@@ -31,6 +31,8 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+
+          <AdSlot label="Community Partners" />
         </aside>
 
         <section className="min-w-0 space-y-4">
@@ -47,7 +49,8 @@ export default function HomePage() {
           {samplePosts.map((post, index) => (
             <div key={post.id} className="space-y-4">
               <PostCard {...post} />
-              {index === 1 ? <AdSlot /> : null}
+              {index === 0 ? <AdSlot label="Sponsored" /> : null}
+              {index === 2 ? <AdSlot label="Recommended" /> : null}
             </div>
           ))}
         </section>
@@ -62,7 +65,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <AdSlot />
+          <AdSlot label="Sponsored" />
 
           <div className="card">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Suggested Groups</h2>

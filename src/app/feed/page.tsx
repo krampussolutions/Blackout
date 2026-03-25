@@ -97,6 +97,8 @@ export default async function FeedPage() {
             </div>
           </div>
 
+          <AdSlot label="Suggested Content" />
+
           <div className="card">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Following</h2>
             <div className="mt-4 space-y-3">
@@ -114,6 +116,8 @@ export default async function FeedPage() {
               ))}
             </div>
           </div>
+
+          <AdSlot label="Sponsored" />
         </aside>
 
         <section className="min-w-0 space-y-4">
@@ -125,7 +129,8 @@ export default async function FeedPage() {
           {posts.map((post, index) => (
             <div key={post.id} className="space-y-4">
               <PostCard {...post} />
-              {index === 0 ? <AdSlot /> : null}
+              {index === 0 ? <AdSlot label="Sponsored" /> : null}
+              {index === 3 ? <AdSlot label="Recommended" /> : null}
             </div>
           ))}
         </section>
