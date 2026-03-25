@@ -306,10 +306,11 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
       count,
     }));
 
-  const trendingTopics = [...topCategories, ...suggestedGroups, ...interestTopicLinks].slice(
-    0,
-    6
-  );
+  const trendingTopics = [
+    ...topCategories,
+    ...suggestedGroups,
+    ...interestTopicLinks,
+  ].slice(0, 6);
 
   let filteredPosts = posts;
 
@@ -392,8 +393,8 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
   return (
     <main className="container-shell py-8 md:py-10">
-      <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_280px]">
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+      <div className="relative grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_280px]">
+        <aside className="relative z-20 space-y-4 lg:sticky lg:top-24 lg:h-fit">
           <div className="card">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
               Browse
@@ -454,7 +455,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
             </div>
           </div>
 
-          <div className="card">
+          <div className="card relative z-20">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
                 Categories
@@ -462,7 +463,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
               {activeCategory || activeTopic ? (
                 <Link
                   href={buildFeedHref(activeView)}
-                  className="text-xs text-muted hover:text-text"
+                  className="relative z-20 text-xs text-muted hover:text-text"
                 >
                   Clear
                 </Link>
@@ -476,13 +477,14 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                     <Link
                       key={category.slug}
                       href={buildFeedHref(activeView, category.slug)}
-                      className={`rounded-full border px-3 py-2 text-xs transition ${
+                      className={`relative z-20 inline-flex rounded-full border px-3 py-2 text-xs transition pointer-events-auto ${
                         isActive
                           ? "border-brand bg-brand/20 text-brand"
-                          : "border-border bg-panelSoft text-muted hover:text-text"
+                          : "border-border bg-panelSoft text-muted hover:border-brand/40 hover:bg-panel hover:text-text"
                       }`}
                     >
-                      {category.name} <span className="opacity-70">{category.count}</span>
+                      {category.name}
+                      <span className="ml-1 opacity-70">{category.count}</span>
                     </Link>
                   );
                 })
@@ -493,7 +495,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
           </div>
         </aside>
 
-        <section className="space-y-4">
+        <section className="relative z-0 space-y-4">
           <div className="card">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -534,7 +536,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
           )}
         </section>
 
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
+        <aside className="relative z-20 space-y-4 lg:sticky lg:top-24 lg:h-fit">
           <div className="card">
             <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
               Suggested Members
@@ -546,12 +548,15 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
             </div>
           </div>
 
-          <div className="card">
+          <div className="card relative z-20">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
                 Suggested Groups
               </h2>
-              <Link href="/groups" className="text-xs text-muted hover:text-text">
+              <Link
+                href="/groups"
+                className="relative z-20 text-xs text-muted hover:text-text"
+              >
                 View all
               </Link>
             </div>
@@ -561,7 +566,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                   <Link
                     key={group.slug}
                     href={group.href}
-                    className="block rounded-xl border border-border bg-panelSoft px-3 py-3 transition hover:border-brand/40 hover:bg-panel"
+                    className="relative z-20 block rounded-xl border border-border bg-panelSoft px-3 py-3 transition pointer-events-auto hover:border-brand/40 hover:bg-panel"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div>
