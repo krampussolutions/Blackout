@@ -13,6 +13,24 @@ type FeedPageProps = {
   }>;
 };
 
+type FeedPost = {
+  id: string;
+  title: string;
+  category: string;
+  categorySlug?: string;
+  author: string;
+  authorDisplayName: string;
+  excerpt: string;
+  comments: number;
+  likes: number;
+  initialLiked: boolean;
+  isOwner: boolean;
+  groupName?: string;
+  groupSlug?: string;
+  authorId: string;
+  createdAt: string;
+};
+
 function formatMember(member: {
   id?: string;
   username: string;
@@ -43,7 +61,12 @@ function formatMember(member: {
     followers: member.followers || 0,
     following: member.following || 0,
     posts: member.posts || 0,
-    joinedLabel: member.created_at ? `Joined ${new Date(member.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}` : "Joined recently",
+    joinedLabel: member.created_at
+      ? `Joined ${new Date(member.created_at).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        })}`
+      : "Joined recently",
     isFollowing: member.isFollowing || false,
     isCurrentUser: member.isCurrentUser || false,
   };
@@ -77,7 +100,8 @@ function getFeedHeading(view: string, categoryName?: string, topic?: string) {
     case "latest":
       return {
         title: "Latest posts",
-        description: "The most recent preparedness posts from across the network.",
+        description:
+          "The most recent preparedness posts from across the network.",
       };
     case "following":
       return {
@@ -87,7 +111,8 @@ function getFeedHeading(view: string, categoryName?: string, topic?: string) {
     case "saved":
       return {
         title: "Saved",
-        description: "Posts you have liked so you can come back to them quickly.",
+        description:
+          "Posts you have liked so you can come back to them quickly.",
       };
     default:
       return {
@@ -99,24 +124,39 @@ function getFeedHeading(view: string, categoryName?: string, topic?: string) {
 
 export default async function FeedPage({ searchParams }: FeedPageProps) {
   const params = (await searchParams) ?? {};
-  const activeView = ["for-you", "latest", "following", "saved"].includes((params.view || "").toLowerCase())
+  const activeView = ["for-you", "latest", "following", "saved"].includes(
+    (params.view || "").toLowerCase()
+  )
     ? (params.view || "for-you").toLowerCase()
     : "for-you";
   const activeCategory = params.category?.toLowerCase();
   const activeTopic = params.topic?.toLowerCase();
 
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const [{ data: dbPosts }, { data: dbMembers }, { data: followRows }, { data: likeRows }, { data: dbCategories }, { data: dbGroups }] = await Promise.all([
+  const [
+    { data: dbPosts },
+    { data: dbMembers },
+    { data: followRows },
+    { data: likeRows },
+    { data: dbCategories },
+    { data: dbGroups },
+  ] = await Promise.all([
     supabase
       .from("posts")
-      .select("id, title, content, created_at, user_id, groups(name, slug), categories(name, slug), profiles!posts_user_id_fkey(username, display_name)")
+      .select(
+        "id, title, content, created_at, user_id, groups(name, slug), categories(name, slug), profiles!posts_user_id_fkey(username, display_name)"
+      )
       .order("created_at", { ascending: false })
       .limit(40),
     supabase
       .from("profiles")
-      .select("id, username, display_name, bio, location, avatar_url, cover_url, interests, created_at")
+      .select(
+        "id, username, display_name, bio, location, avatar_url, cover_url, interests, created_at"
+      )
       .order("created_at", { ascending: false })
       .limit(8),
     user
@@ -126,57 +166,96 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
       ? supabase.from("likes").select("post_id").eq("user_id", user.id)
       : Promise.resolve({ data: [] as { post_id: string }[] }),
     supabase.from("categories").select("name, slug").order("name"),
-    supabase.from("groups").select("name, slug").order("created_at", { ascending: false }).limit(6),
+    supabase
+      .from("groups")
+      .select("name, slug")
+      .order("created_at", { ascending: false })
+      .limit(6),
   ]);
 
   const followingIds = new Set((followRows || []).map((row) => row.following_id));
   const likedPostIds = new Set((likeRows || []).map((row) => row.post_id));
 
-  const posts = dbPosts && dbPosts.length > 0
-    ? await Promise.all(dbPosts.map(async (post) => {
-        const author = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-        const category = Array.isArray(post.categories) ? post.categories[0] : post.categories;
-        const group = Array.isArray(post.groups) ? post.groups[0] : post.groups;
-        const [{ count: likeCount }, { count: commentCount }] = await Promise.all([
-          supabase.from("likes").select("id", { count: "exact", head: true }).eq("post_id", post.id),
-          supabase.from("comments").select("id", { count: "exact", head: true }).eq("post_id", post.id),
-        ]);
-        return {
+  const posts: FeedPost[] =
+    dbPosts && dbPosts.length > 0
+      ? await Promise.all(
+          dbPosts.map(async (post) => {
+            const author = Array.isArray(post.profiles)
+              ? post.profiles[0]
+              : post.profiles;
+            const category = Array.isArray(post.categories)
+              ? post.categories[0]
+              : post.categories;
+            const group = Array.isArray(post.groups)
+              ? post.groups[0]
+              : post.groups;
+
+            const [{ count: likeCount }, { count: commentCount }] =
+              await Promise.all([
+                supabase
+                  .from("likes")
+                  .select("id", { count: "exact", head: true })
+                  .eq("post_id", post.id),
+                supabase
+                  .from("comments")
+                  .select("id", { count: "exact", head: true })
+                  .eq("post_id", post.id),
+              ]);
+
+            return {
+              id: post.id,
+              title: post.title,
+              category: category?.name || "General Preparedness",
+              categorySlug: category?.slug || undefined,
+              author: author?.username || "member",
+              authorDisplayName:
+                author?.display_name || author?.username || "member",
+              excerpt: post.content,
+              comments: commentCount || 0,
+              likes: likeCount || 0,
+              initialLiked: likedPostIds.has(post.id),
+              isOwner: user?.id === post.user_id,
+              groupName: group?.name || undefined,
+              groupSlug: group?.slug || undefined,
+              authorId: post.user_id,
+              createdAt: post.created_at,
+            };
+          })
+        )
+      : samplePosts.map((post) => ({
           id: post.id,
           title: post.title,
-          category: category?.name || "General Preparedness",
-          categorySlug: category?.slug || undefined,
-          author: author?.username || "member",
-          authorDisplayName: author?.display_name || author?.username || "member",
-          excerpt: post.content,
-          comments: commentCount || 0,
-          likes: likeCount || 0,
-          initialLiked: likedPostIds.has(post.id),
-          isOwner: user?.id === post.user_id,
-          groupName: group?.name || undefined,
-          groupSlug: group?.slug || undefined,
-          authorId: post.user_id,
-          createdAt: post.created_at,
-        };
-      }))
-        : samplePosts.map((post) => ({
-        ...post,
-        categorySlug: post.category
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-|-$/g, ""),
-        authorDisplayName: post.author,
-        initialLiked: false,
-        isOwner: false,
-        groupName: undefined,
-        groupSlug: undefined,
-        authorId: "",
-        createdAt: new Date().toISOString(),
-      }));
+          category: post.category,
+          categorySlug: post.category
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-|-$/g, ""),
+          author: post.author,
+          authorDisplayName: post.author,
+          excerpt: post.excerpt,
+          comments: post.comments,
+          likes: post.likes,
+          initialLiked: false,
+          isOwner: false,
+          groupName: undefined,
+          groupSlug: undefined,
+          authorId: "",
+          createdAt: new Date().toISOString(),
+        }));
 
-  const categoryCounts = new Map<string, { name: string; slug: string; count: number }>();
+  const categoryCounts = new Map<
+    string,
+    { name: string; slug: string; count: number }
+  >();
+
   posts.forEach((post) => {
-    const slug = post.categorySlug || post.category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const slug =
+      post.categorySlug ||
+      post.category
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+
     const existing = categoryCounts.get(slug);
     if (existing) {
       existing.count += 1;
@@ -185,16 +264,21 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     }
   });
 
-  const categories = (dbCategories || []).map((category) => ({
-    ...category,
-    count: categoryCounts.get(category.slug)?.count || 0,
-  })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  const categories = (dbCategories || [])
+    .map((category) => ({
+      ...category,
+      count: categoryCounts.get(category.slug)?.count || 0,
+    }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
-  const topGroups = (dbGroups || []).map((group) => ({
-    label: group.name,
-    href: `/groups/${group.slug}`,
-    count: posts.filter((post) => post.groupSlug === group.slug).length,
-  })).filter((group) => group.count > 0);
+  const suggestedGroups = (dbGroups || [])
+    .map((group) => ({
+      label: group.name,
+      slug: group.slug,
+      href: `/groups/${group.slug}`,
+      count: posts.filter((post) => post.groupSlug === group.slug).length,
+    }))
+    .filter((group) => group.count > 0);
 
   const topCategories = [...categoryCounts.values()]
     .sort((a, b) => b.count - a.count)
@@ -222,15 +306,23 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
       count,
     }));
 
-  const trendingTopics = [...topCategories, ...topGroups, ...interestTopicLinks].slice(0, 6);
+  const trendingTopics = [...topCategories, ...suggestedGroups, ...interestTopicLinks].slice(
+    0,
+    6
+  );
 
   let filteredPosts = posts;
+
   if (activeCategory) {
-    filteredPosts = filteredPosts.filter((post) => post.categorySlug === activeCategory);
+    filteredPosts = filteredPosts.filter(
+      (post) => post.categorySlug === activeCategory
+    );
   }
+
   if (activeTopic) {
     filteredPosts = filteredPosts.filter((post) => {
-      const haystack = `${post.title} ${post.excerpt} ${post.category} ${post.groupName || ""}`.toLowerCase();
+      const haystack =
+        `${post.title} ${post.excerpt} ${post.category} ${post.groupName || ""}`.toLowerCase();
       return haystack.includes(activeTopic);
     });
   }
@@ -238,7 +330,9 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   switch (activeView) {
     case "following":
       filteredPosts = user
-        ? filteredPosts.filter((post) => post.authorId && followingIds.has(post.authorId))
+        ? filteredPosts.filter(
+            (post) => post.authorId && followingIds.has(post.authorId)
+          )
         : [];
       break;
     case "saved":
@@ -252,23 +346,48 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
       break;
   }
 
-  const dynamicMembers = (dbMembers || []).map((member) => formatMember({
-    ...member,
-    isFollowing: followingIds.has(member.id),
-    isCurrentUser: user?.id === member.id,
-  }));
+  const dynamicMembers = (dbMembers || []).map((member) =>
+    formatMember({
+      ...member,
+      isFollowing: followingIds.has(member.id),
+      isCurrentUser: user?.id === member.id,
+    })
+  );
 
   const shownMembers = dynamicMembers.length > 0 ? dynamicMembers : memberProfiles;
   const followedMembers = shownMembers.filter((member) => member.isFollowing);
-  const suggestedMembers = shownMembers.filter((member) => !member.isFollowing && !member.isCurrentUser).slice(0, 5);
+  const suggestedMembers = shownMembers
+    .filter((member) => !member.isFollowing && !member.isCurrentUser)
+    .slice(0, 5);
   const currentMember = shownMembers.find((member) => member.isCurrentUser);
-  const feedHeading = getFeedHeading(activeView, categories.find((category) => category.slug === activeCategory)?.name, activeTopic);
+
+  const feedHeading = getFeedHeading(
+    activeView,
+    categories.find((category) => category.slug === activeCategory)?.name,
+    activeTopic
+  );
 
   const browseLinks = [
-    { key: "for-you", label: "For You", href: buildFeedHref("for-you", activeCategory, activeTopic) },
-    { key: "latest", label: "Latest", href: buildFeedHref("latest", activeCategory, activeTopic) },
-    { key: "following", label: "Following", href: buildFeedHref("following", activeCategory, activeTopic) },
-    { key: "saved", label: "Saved", href: buildFeedHref("saved", activeCategory, activeTopic) },
+    {
+      key: "for-you",
+      label: "For You",
+      href: buildFeedHref("for-you", activeCategory, activeTopic),
+    },
+    {
+      key: "latest",
+      label: "Latest",
+      href: buildFeedHref("latest", activeCategory, activeTopic),
+    },
+    {
+      key: "following",
+      label: "Following",
+      href: buildFeedHref("following", activeCategory, activeTopic),
+    },
+    {
+      key: "saved",
+      label: "Saved",
+      href: buildFeedHref("saved", activeCategory, activeTopic),
+    },
   ];
 
   return (
@@ -276,7 +395,9 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
       <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_280px]">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
           <div className="card">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Browse</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+              Browse
+            </h2>
             <div className="mt-4 space-y-2 text-sm">
               {browseLinks.map((item) => {
                 const isActive = activeView === item.key;
@@ -284,7 +405,11 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                   <Link
                     key={item.key}
                     href={item.href}
-                    className={`block rounded-xl px-3 py-3 transition ${isActive ? "bg-panelSoft text-text" : "bg-panelSoft/60 text-muted hover:bg-panelSoft hover:text-text"}`}
+                    className={`block rounded-xl px-3 py-3 transition ${
+                      isActive
+                        ? "bg-panelSoft text-text"
+                        : "bg-panelSoft/60 text-muted hover:bg-panelSoft hover:text-text"
+                    }`}
                   >
                     {item.label}
                   </Link>
@@ -295,37 +420,75 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
           <div className="card">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Following</h2>
-              <Link href={user && currentMember ? `/profile/${currentMember.username}/following` : "/members"} className="text-xs text-muted hover:text-text">View all</Link>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+                Following
+              </h2>
+              <Link
+                href={
+                  user && currentMember
+                    ? `/profile/${currentMember.username}/following`
+                    : "/members"
+                }
+                className="text-xs text-muted hover:text-text"
+              >
+                View all
+              </Link>
             </div>
             <div className="mt-4 space-y-3">
-              {followedMembers.length ? followedMembers.slice(0, 4).map((member) => (
-                <Link key={member.username} href={`/profile/${member.username}`} className="block rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted transition hover:text-text">
-                  <div className="font-medium text-text">{member.displayName}</div>
-                  <div className="text-xs text-muted">@{member.username}</div>
-                </Link>
-              )) : <div className="rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted">Follow a few members to build your network.</div>}
+              {followedMembers.length ? (
+                followedMembers.slice(0, 4).map((member) => (
+                  <Link
+                    key={member.username}
+                    href={`/profile/${member.username}`}
+                    className="block rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted transition hover:text-text"
+                  >
+                    <div className="font-medium text-text">{member.displayName}</div>
+                    <div className="text-xs text-muted">@{member.username}</div>
+                  </Link>
+                ))
+              ) : (
+                <div className="rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted">
+                  Follow a few members to build your network.
+                </div>
+              )}
             </div>
           </div>
 
           <div className="card">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Categories</h2>
-              {(activeCategory || activeTopic) ? <Link href={buildFeedHref(activeView)} className="text-xs text-muted hover:text-text">Clear</Link> : null}
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+                Categories
+              </h2>
+              {activeCategory || activeTopic ? (
+                <Link
+                  href={buildFeedHref(activeView)}
+                  className="text-xs text-muted hover:text-text"
+                >
+                  Clear
+                </Link>
+              ) : null}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {categories.length ? categories.slice(0, 8).map((category) => {
-                const isActive = activeCategory === category.slug;
-                return (
-                  <Link
-                    key={category.slug}
-                    href={buildFeedHref(activeView, category.slug)}
-                    className={`rounded-full border px-3 py-2 text-xs transition ${isActive ? "border-brand bg-brand/20 text-brand" : "border-border bg-panelSoft text-muted hover:text-text"}`}
-                  >
-                    {category.name} <span className="opacity-70">{category.count}</span>
-                  </Link>
-                );
-              }) : <div className="text-sm text-muted">No categories yet.</div>}
+              {categories.length ? (
+                categories.slice(0, 8).map((category) => {
+                  const isActive = activeCategory === category.slug;
+                  return (
+                    <Link
+                      key={category.slug}
+                      href={buildFeedHref(activeView, category.slug)}
+                      className={`rounded-full border px-3 py-2 text-xs transition ${
+                        isActive
+                          ? "border-brand bg-brand/20 text-brand"
+                          : "border-border bg-panelSoft text-muted hover:text-text"
+                      }`}
+                    >
+                      {category.name} <span className="opacity-70">{category.count}</span>
+                    </Link>
+                  );
+                })
+              ) : (
+                <div className="text-sm text-muted">No categories yet.</div>
+              )}
             </div>
           </div>
         </aside>
@@ -335,32 +498,89 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h1 className="text-2xl font-bold">{feedHeading.title}</h1>
-                <p className="mt-2 text-sm text-muted">{feedHeading.description}</p>
+                <p className="mt-2 text-sm text-muted">
+                  {feedHeading.description}
+                </p>
               </div>
-              <Link href={activeCategory ? `/posts/new?group=&category=${activeCategory}` : "/posts/new"} className="button-primary">Create Post</Link>
+              <Link
+                href={
+                  activeCategory
+                    ? `/posts/new?group=&category=${activeCategory}`
+                    : "/posts/new"
+                }
+                className="button-primary"
+              >
+                Create Post
+              </Link>
             </div>
           </div>
 
           <AdSlot title="Sponsored" variant="wide" />
 
-          {filteredPosts.length ? filteredPosts.map((post, index) => (
-            <div key={post.id} className="space-y-4">
-              <PostCard {...post} />
-              {index === 1 ? <AdSlot title="Sponsored" variant="wide" /> : null}
-            </div>
-          )) : (
+          {filteredPosts.length ? (
+            filteredPosts.map((post, index) => (
+              <div key={post.id} className="space-y-4">
+                <PostCard {...post} />
+                {index === 1 ? <AdSlot title="Sponsored" variant="wide" /> : null}
+              </div>
+            ))
+          ) : (
             <div className="card text-sm text-muted">
               No posts match this view yet.
-              {!user && (activeView === "following" || activeView === "saved") ? " Log in and interact with posts to populate this section." : " Try another browse option or category."}
+              {!user && (activeView === "following" || activeView === "saved")
+                ? " Log in and interact with posts to populate this section."
+                : " Try another browse option or category."}
             </div>
           )}
         </section>
 
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
           <div className="card">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Suggested Members</h2>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+              Suggested Members
+            </h2>
             <div className="mt-4 space-y-3">
-              {suggestedMembers.map((member) => <MemberCard key={member.username} member={member} compact />)}
+              {suggestedMembers.map((member) => (
+                <MemberCard key={member.username} member={member} compact />
+              ))}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+                Suggested Groups
+              </h2>
+              <Link href="/groups" className="text-xs text-muted hover:text-text">
+                View all
+              </Link>
+            </div>
+            <div className="mt-4 space-y-2">
+              {suggestedGroups.length ? (
+                suggestedGroups.map((group) => (
+                  <Link
+                    key={group.slug}
+                    href={group.href}
+                    className="block rounded-xl border border-border bg-panelSoft px-3 py-3 transition hover:border-brand/40 hover:bg-panel"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-medium text-text">
+                          {group.label}
+                        </div>
+                        <div className="mt-1 text-xs text-muted">
+                          {group.count} posts
+                        </div>
+                      </div>
+                      <span className="text-xs text-brand">View</span>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <div className="text-sm text-muted">
+                  Suggested groups will appear as the network grows.
+                </div>
+              )}
             </div>
           </div>
 
@@ -368,15 +588,35 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
 
           <div className="card">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Trending Topics</h2>
-              {(activeTopic || activeCategory) ? <Link href={buildFeedHref(activeView)} className="text-xs text-muted hover:text-text">Reset</Link> : null}
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+                Trending Topics
+              </h2>
+              {activeTopic || activeCategory ? (
+                <Link
+                  href={buildFeedHref(activeView)}
+                  className="text-xs text-muted hover:text-text"
+                >
+                  Reset
+                </Link>
+              ) : null}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {trendingTopics.length ? trendingTopics.map((topic) => (
-                <Link key={`${topic.label}-${topic.href}`} href={topic.href} className="rounded-full border border-border bg-panelSoft px-3 py-2 text-xs text-muted transition hover:text-text">
-                  #{topic.label.toLowerCase().replace(/\s+/g, "-")} <span className="opacity-70">{topic.count}</span>
-                </Link>
-              )) : <div className="text-sm text-muted">Trending topics will appear as the network grows.</div>}
+              {trendingTopics.length ? (
+                trendingTopics.map((topic) => (
+                  <Link
+                    key={`${topic.label}-${topic.href}`}
+                    href={topic.href}
+                    className="rounded-full border border-border bg-panelSoft px-3 py-2 text-xs text-muted transition hover:text-text"
+                  >
+                    #{topic.label.toLowerCase().replace(/\s+/g, "-")}{" "}
+                    <span className="opacity-70">{topic.count}</span>
+                  </Link>
+                ))
+              ) : (
+                <div className="text-sm text-muted">
+                  Trending topics will appear as the network grows.
+                </div>
+              )}
             </div>
           </div>
         </aside>
