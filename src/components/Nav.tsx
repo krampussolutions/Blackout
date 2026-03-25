@@ -53,9 +53,9 @@ export default async function Nav() {
                 <span className="inline-flex items-center gap-2">
                   {link.label}
                   {isMessages && unreadCount > 0 ? (
-                   <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full border border-amber-400/30 bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-200">
-  {unreadCount}
-</span>
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
                   ) : null}
                 </span>
               </Link>
