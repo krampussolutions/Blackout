@@ -148,9 +148,14 @@ export const samplePosts = [
 ];
 
 export const groups = [
-  { name: 'Blackout Reports', description: 'Storm prep, outages, and live situation updates.' },
-  { name: 'Off-Grid Builds', description: 'Solar, battery banks, heating, and water systems.' },
-  { name: 'Food & Pantry', description: 'Storage systems, canning, freeze-dried, and rotation.' }
+  { name: 'Power Outages', slug: 'power-outages', description: 'Share blackout updates, backup power setups, outage prep, and grid-down experience.' },
+  { name: 'Off Grid Living', slug: 'off-grid-living', description: 'Discuss solar, water, cabins, batteries, generators, and living off-grid.' },
+  { name: 'Food Storage', slug: 'food-storage', description: 'Long-term pantry planning, freeze-dried food, canning, and rotation systems.' },
+  { name: 'Water & Filtration', slug: 'water-filtration', description: 'Storage, purification, wells, filters, and emergency water planning.' },
+  { name: 'Medical / First Aid', slug: 'medical-first-aid', description: 'Preparedness-minded discussion around kits, supplies, and first aid readiness.' },
+  { name: 'Comms', slug: 'comms-group', description: 'Ham radio, emergency communications, signal planning, and backup communication methods.' },
+  { name: 'Homesteading', slug: 'homesteading', description: 'Gardens, livestock, self-reliance, preserving food, and homestead systems.' },
+  { name: 'Security', slug: 'security', description: 'Home hardening, awareness, lighting, cameras, and practical safety planning.' }
 ];
 
 export const rightRailTopics = [

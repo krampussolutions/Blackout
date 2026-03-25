@@ -15,6 +15,8 @@ type PostCardProps = {
   likes?: number;
   initialLiked?: boolean;
   isOwner?: boolean;
+  groupName?: string;
+  groupSlug?: string;
 };
 
 export default function PostCard({
@@ -28,6 +30,8 @@ export default function PostCard({
   likes = 0,
   initialLiked = false,
   isOwner = false,
+  groupName,
+  groupSlug,
 }: PostCardProps) {
   const profile = getMemberProfile(author);
   const avatar = profile?.avatar || author.slice(0, 2).toUpperCase();
@@ -44,6 +48,12 @@ export default function PostCard({
             <Link href={`/profile/${author}`} className="font-semibold text-text hover:underline">{displayName}</Link>
             <span className="text-xs text-muted">@{author}</span>
             <span className="text-xs text-muted">posted in {category}</span>
+            {groupName && groupSlug ? (
+              <>
+                <span className="text-xs text-muted">•</span>
+                <Link href={`/groups/${groupSlug}`} className="text-xs text-muted hover:text-text">{groupName}</Link>
+              </>
+            ) : null}
           </div>
           <p className="mt-1 text-xs text-muted">Preparedness discussion</p>
         </div>

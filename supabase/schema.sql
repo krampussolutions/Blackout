@@ -264,3 +264,95 @@ create policy "Recipients can mark messages as read" on public.direct_messages f
 ) with check (
   auth.uid() = recipient_id
 );
+
+create table if not exists public.groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  slug text not null unique,
+  description text not null default '',
+  cover_url text,
+  created_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.group_members (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text not null default 'member' check (role in ('member', 'admin')),
+  created_at timestamptz not null default now(),
+  unique (group_id, user_id)
+);
+
+alter table public.posts add column if not exists group_id uuid references public.groups(id) on delete set null;
+
+create index if not exists groups_slug_idx on public.groups(slug);
+create index if not exists group_members_group_id_idx on public.group_members(group_id);
+create index if not exists group_members_user_id_idx on public.group_members(user_id);
+create index if not exists posts_group_id_idx on public.posts(group_id);
+
+alter table public.groups enable row level security;
+alter table public.group_members enable row level security;
+
+drop policy if exists "Anyone can view groups" on public.groups;
+drop policy if exists "Authenticated users can create groups" on public.groups;
+drop policy if exists "Group creators can update groups" on public.groups;
+drop policy if exists "Group creators can delete groups" on public.groups;
+drop policy if exists "Anyone can view group members" on public.group_members;
+drop policy if exists "Authenticated users can join groups" on public.group_members;
+drop policy if exists "Users can leave groups" on public.group_members;
+drop policy if exists "Group creator can manage members" on public.group_members;
+drop policy if exists "Authenticated users can create posts" on public.posts;
+drop policy if exists "Users can update their own posts" on public.posts;
+
+create policy "Anyone can view groups" on public.groups for select using (true);
+create policy "Authenticated users can create groups" on public.groups for insert to authenticated with check (auth.uid() = created_by);
+create policy "Group creators can update groups" on public.groups for update to authenticated using (auth.uid() = created_by) with check (auth.uid() = created_by);
+create policy "Group creators can delete groups" on public.groups for delete to authenticated using (auth.uid() = created_by);
+
+create policy "Anyone can view group members" on public.group_members for select using (true);
+create policy "Authenticated users can join groups" on public.group_members for insert to authenticated with check (auth.uid() = user_id);
+create policy "Users can leave groups" on public.group_members for delete to authenticated using (auth.uid() = user_id);
+create policy "Group creator can manage members" on public.group_members for all to authenticated using (
+  exists (
+    select 1 from public.groups g where g.id = group_members.group_id and g.created_by = auth.uid()
+  )
+) with check (
+  exists (
+    select 1 from public.groups g where g.id = group_members.group_id and g.created_by = auth.uid()
+  )
+);
+
+create policy "Authenticated users can create posts" on public.posts for insert with check (
+  auth.uid() = user_id
+  and (
+    group_id is null
+    or exists (
+      select 1 from public.group_members gm
+      where gm.group_id = posts.group_id and gm.user_id = auth.uid()
+    )
+  )
+);
+
+create policy "Users can update their own posts" on public.posts for update using (auth.uid() = user_id) with check (
+  auth.uid() = user_id
+  and (
+    group_id is null
+    or exists (
+      select 1 from public.group_members gm
+      where gm.group_id = posts.group_id and gm.user_id = auth.uid()
+    )
+  )
+);
+
+insert into public.groups (name, slug, description)
+values
+  ('Power Outages', 'power-outages', 'Share blackout updates, backup power setups, outage prep, and grid-down experience.'),
+  ('Off Grid Living', 'off-grid-living', 'Discuss solar, water, cabins, batteries, generators, and living off-grid.'),
+  ('Food Storage', 'food-storage', 'Long-term pantry planning, freeze-dried food, canning, and rotation systems.'),
+  ('Water & Filtration', 'water-filtration', 'Storage, purification, wells, filters, and emergency water planning.'),
+  ('Medical / First Aid', 'medical-first-aid', 'Preparedness-minded discussion around kits, supplies, and first aid readiness.'),
+  ('Comms', 'comms-group', 'Ham radio, emergency communications, signal planning, and backup communication methods.'),
+  ('Homesteading', 'homesteading', 'Gardens, livestock, self-reliance, preserving food, and homestead systems.'),
+  ('Security', 'security', 'Home hardening, awareness, lighting, cameras, and practical safety planning.')
+on conflict (slug) do nothing;

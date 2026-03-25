@@ -48,7 +48,7 @@ export default async function FeedPage() {
   const [{ data: dbPosts }, { data: dbMembers }, { data: followRows }, { data: likeRows }] = await Promise.all([
     supabase
       .from("posts")
-      .select("id, title, content, created_at, user_id, categories(name), profiles!posts_user_id_fkey(username, display_name)")
+      .select("id, title, content, created_at, user_id, groups(name, slug), categories(name), profiles!posts_user_id_fkey(username, display_name)")
       .order("created_at", { ascending: false })
       .limit(25),
     supabase
@@ -71,6 +71,7 @@ export default async function FeedPage() {
     ? await Promise.all(dbPosts.map(async (post) => {
         const author = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
         const category = Array.isArray(post.categories) ? post.categories[0] : post.categories;
+        const group = Array.isArray(post.groups) ? post.groups[0] : post.groups;
         const [{ count: likeCount }, { count: commentCount }] = await Promise.all([
           supabase.from("likes").select("id", { count: "exact", head: true }).eq("post_id", post.id),
           supabase.from("comments").select("id", { count: "exact", head: true }).eq("post_id", post.id),
@@ -86,6 +87,8 @@ export default async function FeedPage() {
           likes: likeCount || 0,
           initialLiked: likedPostIds.has(post.id),
           isOwner: user?.id === post.user_id,
+          groupName: group?.name || undefined,
+          groupSlug: group?.slug || undefined,
         };
       }))
     : samplePosts;

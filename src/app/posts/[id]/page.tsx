@@ -14,7 +14,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const [{ data: post }, { data: comments }, { count: likeCount }, { count: commentCount }, { data: likeRow }] = await Promise.all([
     supabase
       .from("posts")
-      .select("id, title, content, created_at, user_id, categories(name), profiles!posts_user_id_fkey(username, display_name)")
+      .select("id, title, content, created_at, user_id, groups(name, slug), categories(name), profiles!posts_user_id_fkey(username, display_name)")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -31,6 +31,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
   const author = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
   const category = Array.isArray(post.categories) ? post.categories[0] : post.categories;
+  const group = Array.isArray(post.groups) ? post.groups[0] : post.groups;
   const authorUsername = author?.username || "member";
   const authorDisplayName = author?.display_name || authorUsername;
   const isOwner = user?.id === post.user_id;
@@ -41,7 +42,15 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         <article className="card">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="text-xs uppercase tracking-[0.18em] text-muted">{category?.name || "General Preparedness"}</div>
+              <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted">
+                <span>{category?.name || "General Preparedness"}</span>
+                {group?.slug ? (
+                  <>
+                    <span>•</span>
+                    <Link href={`/groups/${group.slug}`} className="hover:text-text">{group.name}</Link>
+                  </>
+                ) : null}
+              </div>
               <h1 className="mt-3 text-3xl font-bold leading-tight">{post.title}</h1>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted">
                 <Link href={`/profile/${authorUsername}`} className="font-semibold text-text hover:underline">{authorDisplayName}</Link>

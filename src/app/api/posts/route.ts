@@ -5,7 +5,7 @@ export async function GET() {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("posts")
-    .select("id, title, content, created_at, categories(name), profiles!posts_user_id_fkey(username, display_name)")
+    .select("id, title, content, created_at, groups(name, slug), categories(name), profiles!posts_user_id_fkey(username, display_name)")
     .order("created_at", { ascending: false })
     .limit(25);
 
