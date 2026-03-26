@@ -2,7 +2,7 @@ import Link from "next/link";
 import AdSlot from "@/components/AdSlot";
 import MemberCard from "@/components/MemberCard";
 import PostCard from "@/components/PostCard";
-import { samplePosts, memberProfiles, type MemberProfile } from "@/lib/site";
+import { type MemberProfile } from "@/lib/site";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type FeedPageProps = {
@@ -222,26 +222,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
             };
           })
         )
-      : samplePosts.map((post) => ({
-          id: post.id,
-          title: post.title,
-          category: post.category,
-          categorySlug: post.category
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/^-|-$/g, ""),
-          author: post.author,
-          authorDisplayName: post.author,
-          excerpt: post.excerpt,
-          comments: post.comments,
-          likes: post.likes,
-          initialLiked: false,
-          isOwner: false,
-          groupName: undefined,
-          groupSlug: undefined,
-          authorId: "",
-          createdAt: new Date().toISOString(),
-        }));
+      : [];
 
   const categoryCounts = new Map<
     string,
@@ -355,7 +336,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     })
   );
 
-  const shownMembers = dynamicMembers.length > 0 ? dynamicMembers : memberProfiles;
+  const shownMembers = dynamicMembers;
   const followedMembers = shownMembers.filter((member) => member.isFollowing);
   const suggestedMembers = shownMembers
     .filter((member) => !member.isFollowing && !member.isCurrentUser)
@@ -528,10 +509,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
             ))
           ) : (
             <div className="card text-sm text-muted">
-              No posts match this view yet.
-              {!user && (activeView === "following" || activeView === "saved")
-                ? " Log in and interact with posts to populate this section."
-                : " Try another browse option or category."}
+              No real posts yet. Be the first to create one.
             </div>
           )}
         </section>
@@ -542,9 +520,15 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
               Suggested Members
             </h2>
             <div className="mt-4 space-y-3">
-              {suggestedMembers.map((member) => (
-                <MemberCard key={member.username} member={member} compact />
-              ))}
+              {suggestedMembers.length ? (
+                suggestedMembers.map((member) => (
+                  <MemberCard key={member.username} member={member} compact />
+                ))
+              ) : (
+                <div className="text-sm text-muted">
+                  No member suggestions yet.
+                </div>
+              )}
             </div>
           </div>
 
@@ -583,7 +567,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                 ))
               ) : (
                 <div className="text-sm text-muted">
-                  Suggested groups will appear as the network grows.
+                  No active groups to suggest yet.
                 </div>
               )}
             </div>
@@ -619,7 +603,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                 ))
               ) : (
                 <div className="text-sm text-muted">
-                  Trending topics will appear as the network grows.
+                  No trending topics yet.
                 </div>
               )}
             </div>

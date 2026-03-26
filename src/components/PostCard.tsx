@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { getMemberProfile } from "@/lib/site";
 import LikeButton from "@/components/LikeButton";
 import PostOwnerActions from "@/components/PostOwnerActions";
 import ReportPostButton from "@/components/ReportPostButton";
@@ -33,9 +32,8 @@ export default function PostCard({
   groupName,
   groupSlug,
 }: PostCardProps) {
-  const profile = getMemberProfile(author);
-  const avatar = profile?.avatar || author.slice(0, 2).toUpperCase();
-  const displayName = authorDisplayName || profile?.displayName || author;
+  const avatar = author.slice(0, 2).toUpperCase();
+  const displayName = authorDisplayName || author;
 
   return (
     <article className="card">

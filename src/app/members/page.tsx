@@ -1,6 +1,6 @@
 import MemberCard from "@/components/MemberCard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { memberProfiles, type MemberProfile } from "@/lib/site";
+import { type MemberProfile } from "@/lib/site";
 
 function toMemberProfile(member: {
   id: string;
@@ -66,7 +66,7 @@ export default async function MembersPage() {
           isCurrentUser: user?.id === profile.id,
         });
       }))
-    : memberProfiles;
+    : [];
 
   return (
     <main className="container-shell py-12">
@@ -76,7 +76,9 @@ export default async function MembersPage() {
           <p className="mt-2 text-muted">Find other preparedness-minded members, build your network, and follow people worth learning from.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {members.map((member) => <MemberCard key={member.username} member={member} />)}
+          {members.length ? members.map((member) => <MemberCard key={member.username} member={member} />) : (
+            <div className="card text-sm text-muted md:col-span-2 xl:col-span-3">No real members to show yet.</div>
+          )}
         </div>
       </div>
     </main>
