@@ -11,6 +11,12 @@ export default function AdSlot({
   title = "Sponsored",
   variant = "card",
 }: AdSlotProps) {
+  const showPlaceholders = process.env.NEXT_PUBLIC_SHOW_AD_PLACEHOLDERS === "true";
+
+  if (!showPlaceholders) {
+    return null;
+  }
+
   const variantClasses =
     variant === "wide"
       ? "min-h-[140px]"
@@ -34,7 +40,7 @@ export default function AdSlot({
       </div>
 
       <div className="flex min-h-[90px] items-center justify-center px-4 py-6 text-center text-sm text-white/40">
-        AdSense placement area
+        Ad placeholder hidden by default until live ads are approved.
       </div>
     </div>
   );

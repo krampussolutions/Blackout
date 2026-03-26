@@ -13,8 +13,8 @@ export default function ContactPage() {
           <h1 className="text-3xl font-semibold">Contact</h1>
           <p className="mt-4 text-sm leading-7 text-muted">
             For support, moderation questions, business inquiries, or legal requests,
-            contact us by email. Include your username and the page or post involved when
-            reporting an issue so we can review it faster.
+            contact us by email. You can also use the in-app Report button on posts. Include your username
+            and the page or post involved when reporting an issue so we can review it faster.
           </p>
         </div>
 
