@@ -7,19 +7,19 @@ import { siteConfig } from "@/lib/site";
 export const metadata: Metadata = {
   title: `${siteConfig.name} | Preparedness Community`,
   description: siteConfig.description,
-  metadataBase: new URL(siteConfig.url),
+  metadataBase: new URL("https://www.blackout-network.com"),
   openGraph: {
     title: `${siteConfig.name} | Preparedness Community`,
     description: siteConfig.description,
-    url: siteConfig.url,
+    url: "https://www.blackout-network.com",
     siteName: siteConfig.name,
     type: "website",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "https://www.blackout-network.com/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: `${siteConfig.name} preview image`,
+        alt: "Blackout Network",
       },
     ],
   },
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${siteConfig.name} | Preparedness Community`,
     description: siteConfig.description,
-    images: ["/og-image.jpg"],
+    images: ["https://www.blackout-network.com/og-image.jpg"],
   },
 };
 
