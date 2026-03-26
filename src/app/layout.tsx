@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.blackout-network.com/og-image.jpg",
+        url: "https://www.blackout-network.com/og-image.png",
         width: 1200,
         height: 630,
         alt: "Blackout Network",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${siteConfig.name} | Preparedness Community`,
     description: siteConfig.description,
-    images: ["https://www.blackout-network.com/og-image.jpg"],
+    images: ["https://www.blackout-network.com/og-image.png"],
   },
 };
 
