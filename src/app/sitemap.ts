@@ -3,33 +3,76 @@ import { siteConfig } from "@/lib/site";
 import { guides } from "@/lib/guides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = siteConfig.url;
+  const base = siteConfig.url.replace(/\/$/, "");
 
-  const staticPages = [
-    "",
-    "/guides",
-    "/groups",
-    "/members",
-    "/categories/general-preparedness",
-    "/categories/power-outages",
-    "/categories/water-filtration",
-    "/categories/food-storage",
-    "/categories/medical",
-    "/categories/comms"
+  const staticEntries: MetadataRoute.Sitemap = [
+    {
+      url: `${base}/`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 1,
+    },
+    {
+      url: `${base}/guides`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${base}/groups`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${base}/members`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+    {
+      url: `${base}/categories/general-preparedness`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${base}/categories/power-outages`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${base}/categories/water-filtration`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${base}/categories/food-storage`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${base}/categories/medical`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${base}/categories/comms`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
   ];
 
-  const staticEntries = staticPages.map((path) => ({
-    url: `${base}${path}`,
-    lastModified: new Date(),
-    changeFrequency: path === "" ? "daily" : "weekly" as const,
-    priority: path === "" ? 1 : 0.7
-  }));
-
-  const guideEntries = guides.map((guide) => ({
+  const guideEntries: MetadataRoute.Sitemap = guides.map((guide) => ({
     url: `${base}/guides/${guide.slug}`,
     lastModified: new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.8
+    changeFrequency: "monthly",
+    priority: 0.7,
   }));
 
   return [...staticEntries, ...guideEntries];
