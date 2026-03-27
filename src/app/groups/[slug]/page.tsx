@@ -140,7 +140,7 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ sl
               <div className="mt-4 space-y-3">
                 {members.length ? members.map((member) => (
                   <MemberCard key={member.username} member={member} compact />
-                )) : <div className="rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted">No members yet.</div>}
+                )) : <div className="rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted">{(memberCount || 0) > 0 ? `${memberCount} member${memberCount === 1 ? "" : "s"} joined this group, but profile cards are not available yet.` : "No members yet."}</div>}
               </div>
             </div>
           </aside>

@@ -2,9 +2,6 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const protectedRoutes = [
-  "/feed",
-  "/groups",
-  "/members",
   "/messages",
   "/posts/new",
   "/settings",
@@ -50,7 +47,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/feed/:path*",
     "/groups/:path*",
     "/members/:path*",
     "/messages/:path*",
