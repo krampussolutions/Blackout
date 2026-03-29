@@ -15,9 +15,11 @@ type CommentItem = {
 type CommentSectionProps = {
   postId: string;
   comments: CommentItem[];
+  postOwnerId?: string | null;
+  postTitle?: string;
 };
 
-export default function CommentSection({ postId, comments }: CommentSectionProps) {
+export default function CommentSection({ postId, comments, postOwnerId = null, postTitle = "" }: CommentSectionProps) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const router = useRouter();
   const [content, setContent] = useState("");
@@ -36,16 +38,31 @@ export default function CommentSection({ postId, comments }: CommentSectionProps
     }
 
     setLoading(true);
-    const { error } = await supabase.from("comments").insert({
+    const trimmed = content.trim();
+    const { data: insertedComment, error } = await supabase.from("comments").insert({
       post_id: postId,
       user_id: user.id,
-      content: content.trim(),
-    });
+      content: trimmed,
+    }).select("id").maybeSingle();
     setLoading(false);
 
     if (error) {
       setError(error.message);
       return;
+    }
+
+    if (postOwnerId && postOwnerId !== user.id) {
+      await supabase.from("notifications").insert({
+        user_id: postOwnerId,
+        actor_id: user.id,
+        type: "comment",
+        post_id: postId,
+        comment_id: insertedComment?.id ?? null,
+        metadata: {
+          post_title: postTitle || null,
+          comment_excerpt: trimmed.slice(0, 140),
+        },
+      });
     }
 
     setContent("");

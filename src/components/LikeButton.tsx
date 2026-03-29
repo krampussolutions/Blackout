@@ -6,6 +6,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type LikeButtonProps = {
   postId: string;
+  postOwnerId?: string | null;
+  postTitle?: string;
   initialLiked?: boolean;
   initialCount?: number;
   className?: string;
@@ -13,6 +15,8 @@ type LikeButtonProps = {
 
 export default function LikeButton({
   postId,
+  postOwnerId = null,
+  postTitle = "",
   initialLiked = false,
   initialCount = 0,
   className = "",
@@ -45,6 +49,17 @@ export default function LikeButton({
       if (!error) {
         setLiked(true);
         setCount((value) => value + 1);
+
+        if (postOwnerId && postOwnerId !== user.id) {
+          await supabase.from("notifications").insert({
+            user_id: postOwnerId,
+            actor_id: user.id,
+            type: "like",
+            post_id: postId,
+            metadata: { post_title: postTitle || null },
+          });
+        }
+
         router.refresh();
       }
     }

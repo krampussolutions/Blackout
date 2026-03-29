@@ -61,6 +61,12 @@ export default function FollowButton({
 
       if (!error) {
         setIsFollowing(true);
+        await supabase.from("notifications").insert({
+          user_id: targetUserId,
+          actor_id: user.id,
+          type: "follow",
+          metadata: {},
+        });
         router.refresh();
       }
     }

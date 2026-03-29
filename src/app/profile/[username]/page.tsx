@@ -123,6 +123,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         isOwner: user?.id === dbProfile.id,
         groupName: group?.name || undefined,
         groupSlug: group?.slug || undefined,
+        postOwnerId: post.user_id,
       };
     });
   }

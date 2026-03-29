@@ -30,17 +30,25 @@ export default function MessageComposer({ recipientId, recipientUsername }: Mess
       return;
     }
 
-    const { error } = await supabase.from("direct_messages").insert({
+    const { data: insertedMessage, error } = await supabase.from("direct_messages").insert({
       sender_id: user.id,
       recipient_id: recipientId,
       content: trimmed,
-    });
+    }).select("id").maybeSingle();
 
     if (error) {
       setError(error.message);
       setLoading(false);
       return;
     }
+
+    await supabase.from("notifications").insert({
+      user_id: recipientId,
+      actor_id: user.id,
+      type: "message",
+      message_id: insertedMessage?.id ?? null,
+      metadata: {},
+    });
 
     setContent("");
     setLoading(false);

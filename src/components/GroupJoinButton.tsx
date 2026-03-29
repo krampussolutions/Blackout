@@ -55,6 +55,23 @@ export default function GroupJoinButton({
 
       if (!error) {
         setIsMember(true);
+
+        const { data: groupRow } = await supabase
+          .from("groups")
+          .select("slug, name, created_by")
+          .eq("id", groupId)
+          .maybeSingle();
+
+        if (groupRow?.created_by && groupRow.created_by !== user.id) {
+          await supabase.from("notifications").insert({
+            user_id: groupRow.created_by,
+            actor_id: user.id,
+            type: "group_join",
+            group_id: groupId,
+            metadata: { group_slug: groupRow.slug, group_name: groupRow.name },
+          });
+        }
+
         router.refresh();
       }
     }

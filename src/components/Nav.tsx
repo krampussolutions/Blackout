@@ -3,8 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/LogoutButton";
 
 const publicLinks = [
+  { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/community-rules", label: "Rules" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -13,6 +13,8 @@ const memberLinks = [
   { href: "/members", label: "Members" },
   { href: "/groups", label: "Groups" },
   { href: "/messages", label: "Messages" },
+  { href: "/notifications", label: "Alerts" },
+  { href: "/invite", label: "Invite" },
   { href: "/posts/new", label: "Create" },
 ];
 
@@ -23,16 +25,19 @@ export default async function Nav() {
   let profileUsername: string | null = null;
   let membershipTier = "free";
   let unreadCount = 0;
+  let unreadNotificationCount = 0;
 
   if (user) {
-    const [{ data: profile }, { count }] = await Promise.all([
+    const [{ data: profile }, { count }, { count: notifCount }] = await Promise.all([
       supabase.from("profiles").select("username, membership_tier").eq("id", user.id).maybeSingle(),
       supabase.from("direct_messages").select("id", { count: "exact", head: true }).eq("recipient_id", user.id).is("read_at", null),
+      supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null),
     ]);
 
     profileUsername = profile?.username ?? null;
     membershipTier = profile?.membership_tier ?? "free";
     unreadCount = count ?? 0;
+    unreadNotificationCount = notifCount ?? 0;
   }
 
   const links = user ? memberLinks : publicLinks;
@@ -48,11 +53,17 @@ export default async function Nav() {
         <nav className="ml-auto flex items-center gap-1 md:gap-2">
           {links.map((link) => {
             const isMessages = link.href === "/messages";
+            const isNotifications = link.href === "/notifications";
             return (
               <Link key={link.href} href={link.href} className="rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panelSoft hover:text-text">
                 <span className="inline-flex items-center gap-2">
                   {link.label}
                   {isMessages && unreadCount > 0 ? (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
+                      {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                    </span>
+                  ) : null}
+                  {isNotifications && unreadNotificationCount > 0 ? (
                     <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>

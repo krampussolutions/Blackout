@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import AdSlot from "@/components/AdSlot";
 import MemberCard from "@/components/MemberCard";
 import PostCard from "@/components/PostCard";
@@ -30,48 +29,7 @@ type FeedPost = {
   groupSlug?: string;
   authorId: string;
   createdAt: string;
-  relevanceScore?: number;
 };
-
-function normalizeTerm(value?: string | null) {
-  return (value || "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-function titleCaseFromSlug(value: string) {
-  return value
-    .split("-")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function scorePostForUser(post: FeedPost, userInterests: string[], joinedGroupSlugs: Set<string>, followingIds: Set<string>) {
-  let score = 0;
-  const haystack = normalizeTerm(`${post.title} ${post.excerpt} ${post.category} ${post.groupName || ""}`);
-
-  if (post.authorId && followingIds.has(post.authorId)) score += 6;
-  if (post.groupSlug && joinedGroupSlugs.has(post.groupSlug)) score += 8;
-
-  for (const interest of userInterests) {
-    const normalizedInterest = normalizeTerm(interest);
-    if (!normalizedInterest) continue;
-    if (post.categorySlug === normalizedInterest) score += 10;
-    if (post.groupSlug === normalizedInterest) score += 10;
-    if (haystack.includes(normalizedInterest)) score += 4;
-  }
-
-  score += Math.min(post.likes, 10) * 0.35;
-  score += Math.min(post.comments, 10) * 0.45;
-
-  const ageHours = Math.max(0, (Date.now() - new Date(post.createdAt).getTime()) / 36e5);
-  score += Math.max(0, 10 - ageHours * 0.35);
-
-  return Number(score.toFixed(2));
-}
 
 function formatMember(member: {
   id?: string;
@@ -158,8 +116,8 @@ function getFeedHeading(view: string, categoryName?: string, topic?: string) {
       };
     default:
       return {
-        title: "For you",
-        description: "Posts weighted toward your onboarding interests, joined groups, and people you follow.",
+        title: "Home feed",
+        description: "The latest preparedness posts from across the network.",
       };
   }
 }
@@ -179,20 +137,6 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login?redirect_to=/feed");
-  }
-
-  const { data: currentProfile } = await supabase
-    .from("profiles")
-    .select("id, username, onboarding_completed, interests")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!currentProfile?.onboarding_completed) {
-    redirect("/onboarding");
-  }
-
   const [
     { data: dbPosts },
     { data: dbMembers },
@@ -200,7 +144,6 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     { data: likeRows },
     { data: dbCategories },
     { data: dbGroups },
-    { data: joinedGroupRows },
   ] = await Promise.all([
     supabase
       .from("posts")
@@ -225,23 +168,13 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     supabase.from("categories").select("name, slug").order("name"),
     supabase
       .from("groups")
-      .select("id, name, slug")
+      .select("name, slug")
       .order("created_at", { ascending: false })
-      .limit(12),
-    supabase.from("group_members").select("group_id, groups!group_members_group_id_fkey(slug)").eq("user_id", user.id),
+      .limit(6),
   ]);
 
   const followingIds = new Set((followRows || []).map((row) => row.following_id));
   const likedPostIds = new Set((likeRows || []).map((row) => row.post_id));
-  const joinedGroupSlugs = new Set(
-    (joinedGroupRows || [])
-      .map((row) => {
-        const group = Array.isArray(row.groups) ? row.groups[0] : row.groups;
-        return group?.slug || null;
-      })
-      .filter(Boolean) as string[]
-  );
-  const userInterests = (currentProfile?.interests || []).filter(Boolean);
 
   const posts: FeedPost[] =
     dbPosts && dbPosts.length > 0
@@ -286,7 +219,6 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
               groupSlug: group?.slug || undefined,
               authorId: post.user_id,
               createdAt: post.created_at,
-              relevanceScore: 0,
             };
           })
         )
@@ -321,21 +253,13 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
   const suggestedGroups = (dbGroups || [])
-    .map((group) => {
-      const normalizedGroup = normalizeTerm(group.name);
-      const sharedInterest = userInterests.some((interest: string) => normalizeTerm(interest) === normalizedGroup);
-
-      return {
-        label: group.name,
-        slug: group.slug,
-        href: `/groups/${group.slug}`,
-        count: posts.filter((post) => post.groupSlug === group.slug).length,
-        joined: joinedGroupSlugs.has(group.slug),
-        sharedInterest,
-      };
-    })
-    .filter((group) => group.count > 0 || group.sharedInterest)
-    .sort((a, b) => Number(b.joined) - Number(a.joined) || Number(b.sharedInterest) - Number(a.sharedInterest) || b.count - a.count);
+    .map((group) => ({
+      label: group.name,
+      slug: group.slug,
+      href: `/groups/${group.slug}`,
+      count: posts.filter((post) => post.groupSlug === group.slug).length,
+    }))
+    .filter((group) => group.count > 0);
 
   const topCategories = [...categoryCounts.values()]
     .sort((a, b) => b.count - a.count)
@@ -347,8 +271,8 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     }));
 
   const interestTopics = (dbMembers || [])
-    .flatMap((member: { interests?: string[] | null }) => member.interests || [])
-    .reduce((acc: Map<string, number>, interest: string) => {
+    .flatMap((member) => member.interests || [])
+    .reduce((acc, interest) => {
       const normalized = interest.toLowerCase();
       acc.set(normalized, (acc.get(normalized) || 0) + 1);
       return acc;
@@ -369,42 +293,39 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     ...interestTopicLinks,
   ].slice(0, 6);
 
-  const personalizedPosts = posts
-    .map((post) => ({
-      ...post,
-      relevanceScore: scorePostForUser(post, userInterests, joinedGroupSlugs, followingIds),
-    }))
-    .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
   let filteredPosts = posts;
 
-  switch (activeView) {
-    case "following":
-      filteredPosts = user
-        ? posts.filter((post) => post.authorId && followingIds.has(post.authorId))
-        : [];
-      break;
-    case "saved":
-      filteredPosts = user ? posts.filter((post) => likedPostIds.has(post.id)) : [];
-      break;
-    case "for-you":
-      filteredPosts = personalizedPosts;
-      break;
-    case "latest":
-    default:
-      filteredPosts = posts;
-      break;
-  }
-
   if (activeCategory) {
-    filteredPosts = filteredPosts.filter((post) => post.categorySlug === activeCategory);
+    filteredPosts = filteredPosts.filter(
+      (post) => post.categorySlug === activeCategory
+    );
   }
 
   if (activeTopic) {
     filteredPosts = filteredPosts.filter((post) => {
-      const haystack = `${post.title} ${post.excerpt} ${post.category} ${post.groupName || ""}`.toLowerCase();
+      const haystack =
+        `${post.title} ${post.excerpt} ${post.category} ${post.groupName || ""}`.toLowerCase();
       return haystack.includes(activeTopic);
     });
+  }
+
+  switch (activeView) {
+    case "following":
+      filteredPosts = user
+        ? filteredPosts.filter(
+            (post) => post.authorId && followingIds.has(post.authorId)
+          )
+        : [];
+      break;
+    case "saved":
+      filteredPosts = user
+        ? filteredPosts.filter((post) => likedPostIds.has(post.id))
+        : [];
+      break;
+    case "latest":
+    case "for-you":
+    default:
+      break;
   }
 
   const dynamicMembers = (dbMembers || []).map((member) =>
@@ -419,11 +340,6 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   const followedMembers = shownMembers.filter((member) => member.isFollowing);
   const suggestedMembers = shownMembers
     .filter((member) => !member.isFollowing && !member.isCurrentUser)
-    .sort((a, b) => {
-      const aShared = a.interests.filter((interest: string) => userInterests.some((userInterest: string) => normalizeTerm(userInterest) === normalizeTerm(interest))).length;
-      const bShared = b.interests.filter((interest: string) => userInterests.some((userInterest: string) => normalizeTerm(userInterest) === normalizeTerm(interest))).length;
-      return bShared - aShared;
-    })
     .slice(0, 5);
   const currentMember = shownMembers.find((member) => member.isCurrentUser);
 
@@ -481,48 +397,6 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                   </Link>
                 );
               })}
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
-                Your setup
-              </h2>
-              <Link href="/onboarding" className="text-xs text-muted hover:text-text">
-                Edit
-              </Link>
-            </div>
-            <div className="mt-4 space-y-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-muted">Interests</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {userInterests.length ? (
-                    userInterests.map((interest: string) => (
-                      <span key={interest} className="rounded-full border border-border bg-panelSoft px-3 py-1.5 text-xs text-text">
-                        {interest}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted">No interests picked yet.</span>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-muted">Joined groups</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {Array.from(joinedGroupSlugs).length ? (
-                    Array.from(joinedGroupSlugs).slice(0, 4).map((slug) => (
-                      <Link key={slug} href={`/groups/${slug}`} className="rounded-full border border-border bg-panelSoft px-3 py-1.5 text-xs text-text hover:border-brand/40">
-                        {titleCaseFromSlug(slug)}
-                      </Link>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted">Join a few groups to sharpen your feed.</span>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
 
@@ -635,9 +509,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
             ))
           ) : (
             <div className="card text-sm text-muted">
-              {activeView === "for-you"
-                ? "Nothing matches your interests yet. Join a few more groups or create the first post in your lane."
-                : "No real posts yet. Be the first to create one."}
+              No real posts yet. Be the first to create one.
             </div>
           )}
         </section>
@@ -686,7 +558,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                           {group.label}
                         </div>
                         <div className="mt-1 text-xs text-muted">
-                          {group.joined ? "Joined" : group.sharedInterest ? "Matches your interests" : `${group.count} posts`}
+                          {group.count} posts
                         </div>
                       </div>
                       <span className="text-xs text-brand">View</span>

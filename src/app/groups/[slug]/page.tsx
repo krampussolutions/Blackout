@@ -109,6 +109,7 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ sl
             isOwner: user?.id === post.user_id,
             groupName: groupRef?.name || group.name,
             groupSlug: groupRef?.slug || group.slug,
+            postOwnerId: post.user_id,
           };
         })
       )
