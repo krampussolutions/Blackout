@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import AdSlot from "@/components/AdSlot";
 import MemberCard from "@/components/MemberCard";
 import PostCard from "@/components/PostCard";
@@ -136,6 +137,20 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login?redirect_to=/feed");
+  }
+
+  const { data: currentProfile } = await supabase
+    .from("profiles")
+    .select("onboarding_completed")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!currentProfile?.onboarding_completed) {
+    redirect("/onboarding");
+  }
 
   const [
     { data: dbPosts },

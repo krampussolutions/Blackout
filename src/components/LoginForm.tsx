@@ -9,7 +9,7 @@ type LoginFormProps = {
   redirectTo?: string;
 };
 
-export default function LoginForm({ redirectTo = "/feed" }: LoginFormProps) {
+export default function LoginForm({ redirectTo = "/onboarding" }: LoginFormProps) {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
 

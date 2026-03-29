@@ -3,8 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/LogoutButton";
 
 const publicLinks = [
-  { href: "/", label: "Home" },
   { href: "/about", label: "About" },
+  { href: "/community-rules", label: "Rules" },
   { href: "/contact", label: "Contact" },
 ];
 

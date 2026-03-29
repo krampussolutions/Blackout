@@ -10,11 +10,13 @@ create table if not exists public.profiles (
   location text,
   interests text[] default '{}'::text[],
   membership_tier text default 'free' check (membership_tier in ('free', 'premium', 'admin')),
+  onboarding_completed boolean not null default false,
   created_at timestamptz default now()
 );
 
 alter table public.profiles add column if not exists cover_url text;
 alter table public.profiles add column if not exists interests text[] default '{}'::text[];
+alter table public.profiles add column if not exists onboarding_completed boolean not null default false;
 
 create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),

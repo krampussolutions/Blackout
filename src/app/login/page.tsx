@@ -9,7 +9,7 @@ type LoginPageProps = {
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = (await searchParams) ?? {};
-  const redirectTo = params.redirect_to || "/feed";
+  const redirectTo = params.redirect_to || "/onboarding";
   const message = params.message || "";
 
   return (

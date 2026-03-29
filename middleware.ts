@@ -6,6 +6,8 @@ const protectedRoutes = [
   "/posts/new",
   "/settings",
   "/admin",
+  "/onboarding",
+  "/feed",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -53,5 +55,7 @@ export const config = {
     "/posts/new/:path*",
     "/settings/:path*",
     "/admin/:path*",
+    "/onboarding/:path*",
+    "/feed/:path*",
   ],
 };
