@@ -8,9 +8,14 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 type SignupFormProps = {
   redirectTo?: string;
   compact?: boolean;
+  initialInviteCode?: string;
 };
 
-export default function SignupForm({ redirectTo = "/onboarding", compact = false }: SignupFormProps) {
+export default function SignupForm({
+  redirectTo = "/onboarding",
+  compact = false,
+  initialInviteCode = "",
+}: SignupFormProps) {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
@@ -38,6 +43,7 @@ export default function SignupForm({ redirectTo = "/onboarding", compact = false
     }
 
     const emailRedirectTo = typeof window !== "undefined" ? `${window.location.origin}${redirectTo}` : undefined;
+    const inviteCode = initialInviteCode.trim();
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
@@ -47,6 +53,7 @@ export default function SignupForm({ redirectTo = "/onboarding", compact = false
         data: {
           username: trimmedUsername,
           display_name: trimmedDisplayName || trimmedUsername,
+          invite_code: inviteCode || undefined,
         },
       },
     });
