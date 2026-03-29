@@ -323,7 +323,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   const suggestedGroups = (dbGroups || [])
     .map((group) => {
       const normalizedGroup = normalizeTerm(group.name);
-      const sharedInterest = userInterests.some((interest) => normalizeTerm(interest) === normalizedGroup);
+      const sharedInterest = userInterests.some((interest: string) => normalizeTerm(interest) === normalizedGroup);
 
       return {
         label: group.name,
@@ -347,8 +347,8 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
     }));
 
   const interestTopics = (dbMembers || [])
-    .flatMap((member) => member.interests || [])
-    .reduce((acc, interest) => {
+    .flatMap((member: { interests?: string[] | null }) => member.interests || [])
+    .reduce((acc: Map<string, number>, interest: string) => {
       const normalized = interest.toLowerCase();
       acc.set(normalized, (acc.get(normalized) || 0) + 1);
       return acc;
@@ -420,8 +420,8 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   const suggestedMembers = shownMembers
     .filter((member) => !member.isFollowing && !member.isCurrentUser)
     .sort((a, b) => {
-      const aShared = a.interests.filter((interest) => userInterests.some((userInterest) => normalizeTerm(userInterest) === normalizeTerm(interest))).length;
-      const bShared = b.interests.filter((interest) => userInterests.some((userInterest) => normalizeTerm(userInterest) === normalizeTerm(interest))).length;
+      const aShared = a.interests.filter((interest: string) => userInterests.some((userInterest: string) => normalizeTerm(userInterest) === normalizeTerm(interest))).length;
+      const bShared = b.interests.filter((interest: string) => userInterests.some((userInterest: string) => normalizeTerm(userInterest) === normalizeTerm(interest))).length;
       return bShared - aShared;
     })
     .slice(0, 5);
