@@ -498,7 +498,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
                 <p className="text-xs uppercase tracking-[0.16em] text-muted">Interests</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {userInterests.length ? (
-                    userInterests.map((interest) => (
+                    userInterests.map((interest: string) => (
                       <span key={interest} className="rounded-full border border-border bg-panelSoft px-3 py-1.5 text-xs text-text">
                         {interest}
                       </span>
