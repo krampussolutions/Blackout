@@ -36,5 +36,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  await supabase.from("notification_preferences").upsert(
+    {
+      user_id: user.id,
+      push_enabled: true,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" }
+  );
+
   return NextResponse.json({ ok: true });
 }

@@ -11,25 +11,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => null) as { endpoint?: string } | null;
+  const body = (await request.json().catch(() => null)) as { endpoint?: string } | null;
+
   if (!body?.endpoint) {
     return NextResponse.json({ error: "Missing endpoint" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("push_subscriptions").delete().eq("user_id", user.id).eq("endpoint", body.endpoint);
+  const { data: subscription, error } = await supabase
+    .from("push_subscriptions")
+    .select("user_id")
+    .eq("endpoint", body.endpoint)
+    .maybeSingle<{ user_id: string }>();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  await supabase.from("notification_preferences").upsert(
-    {
-      user_id: user.id,
-      push_enabled: false,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" }
-  );
-
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    enabled: subscription?.user_id === user.id,
+  });
 }

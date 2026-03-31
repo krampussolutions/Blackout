@@ -14,23 +14,54 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setStatus("unsupported");
-      return;
+    let cancelled = false;
+
+    async function loadStatus() {
+      if (typeof window === "undefined") return;
+      if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+        setStatus("unsupported");
+        return;
+      }
+
+      if (Notification.permission === "denied") {
+        setStatus("blocked");
+        return;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+          if (!cancelled) setStatus("idle");
+          return;
+        }
+
+        const response = await fetch("/api/push/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        });
+
+        if (!response.ok) {
+          if (!cancelled) setStatus("idle");
+          return;
+        }
+
+        const data = (await response.json()) as { enabled?: boolean };
+        if (!cancelled) {
+          setStatus(data.enabled ? "enabled" : "idle");
+        }
+      } catch {
+        if (!cancelled) setStatus("idle");
+      }
     }
 
-    if (Notification.permission === "denied") {
-      setStatus("blocked");
-      return;
-    }
+    loadStatus();
 
-    navigator.serviceWorker.ready
-      .then((registration) => registration.pushManager.getSubscription())
-      .then((subscription) => {
-        setStatus(subscription ? "enabled" : "idle");
-      })
-      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function enablePush() {
@@ -64,11 +95,17 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
       });
     }
 
-    await fetch("/api/push/subscribe", {
+    const response = await fetch("/api/push/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(subscription.toJSON()),
     });
+
+    if (!response.ok) {
+      setStatus("idle");
+      setLoading(false);
+      return;
+    }
 
     setStatus("enabled");
     setLoading(false);
@@ -80,12 +117,15 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
     const subscription = await registration.pushManager.getSubscription();
 
     if (subscription) {
-      await fetch("/api/push/unsubscribe", {
+      const response = await fetch("/api/push/unsubscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endpoint: subscription.endpoint }),
       });
-      await subscription.unsubscribe();
+
+      if (response.ok) {
+        await subscription.unsubscribe();
+      }
     }
 
     setStatus("idle");

@@ -46,7 +46,7 @@ export default async function NotificationSettingsPage() {
   const preferences = preferencesRow || defaultPreferences(user.id);
 
   if (!preferencesRow) {
-    await supabase.from("notification_preferences").upsert(preferences);
+    await supabase.from("notification_preferences").upsert(preferences, { onConflict: "user_id" });
   }
 
   return (

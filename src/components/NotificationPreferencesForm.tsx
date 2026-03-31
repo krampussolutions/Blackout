@@ -35,7 +35,7 @@ export default function NotificationPreferencesForm({ initialPreferences }: Prop
     setSaved(false);
     setError(null);
 
-    const { error: upsertError } = await supabase.from("notification_preferences").upsert(preferences);
+    const { error: upsertError } = await supabase.from("notification_preferences").upsert(preferences, { onConflict: "user_id" });
 
     if (upsertError) {
       setError(upsertError.message);
