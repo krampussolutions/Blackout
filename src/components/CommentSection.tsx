@@ -49,8 +49,22 @@ export default function CommentSection({
       return;
     }
 
-    setLoading(true);
     const trimmed = content.trim();
+    setLoading(true);
+    setContent("");
+
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticComment: CommentItem = {
+      id: optimisticId,
+      content: trimmed,
+      created_at: new Date().toISOString(),
+      profiles: {
+        username: user.user_metadata?.username ?? "you",
+        display_name: user.user_metadata?.display_name ?? user.user_metadata?.username ?? "You",
+      },
+    };
+
+    setLocalComments((current) => [...current, optimisticComment]);
 
     const { data: insertedComment, error } = await supabase
       .from("comments")
@@ -60,35 +74,40 @@ export default function CommentSection({
         content: trimmed,
       })
       .select("id, content, created_at, profiles!comments_user_id_fkey(username, display_name)")
-      .maybeSingle();
+      .single();
 
     setLoading(false);
 
     if (error) {
+      setLocalComments((current) => current.filter((item) => item.id !== optimisticId));
+      setContent(trimmed);
       setError(error.message);
       return;
     }
 
     if (insertedComment) {
-      setLocalComments((current) => [...current, insertedComment as CommentItem]);
+      setLocalComments((current) =>
+        current.map((item) => (item.id === optimisticId ? (insertedComment as CommentItem) : item))
+      );
     }
-    setContent("");
 
     if (postOwnerId && postOwnerId !== user.id) {
-      await createNotificationAndDeliver({
-        userId: postOwnerId,
-        actorId: user.id,
-        type: "comment",
-        postId: postId,
-        commentId: insertedComment?.id ?? null,
-        metadata: {
-          post_title: postTitle || null,
-          comment_excerpt: trimmed.slice(0, 140),
-        },
-      });
+      try {
+        await createNotificationAndDeliver({
+          userId: postOwnerId,
+          actorId: user.id,
+          type: "comment",
+          postId: postId,
+          commentId: insertedComment?.id ?? null,
+          metadata: {
+            post_title: postTitle || null,
+            comment_excerpt: trimmed.slice(0, 140),
+          },
+        });
+      } catch {
+        // Do not block comment UX if notification delivery fails.
+      }
     }
-
-    router.refresh();
   }
 
   return (

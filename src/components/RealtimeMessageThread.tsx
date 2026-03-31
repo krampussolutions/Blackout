@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import MessageComposer from "@/components/MessageComposer";
 
@@ -39,6 +39,26 @@ export default function RealtimeMessageThread({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
+  const refreshMessages = useCallback(async () => {
+    const { data } = await supabase
+      .from("direct_messages")
+      .select("id, sender_id, recipient_id, content, created_at, read_at")
+      .or(
+        `and(sender_id.eq.${currentUserId},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${currentUserId})`
+      )
+      .order("created_at", { ascending: true })
+      .limit(200);
+
+    setMessages((data as Message[]) || []);
+
+    await supabase
+      .from("direct_messages")
+      .update({ read_at: new Date().toISOString() })
+      .eq("sender_id", peerId)
+      .eq("recipient_id", currentUserId)
+      .is("read_at", null);
+  }, [currentUserId, peerId, supabase]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -46,58 +66,41 @@ export default function RealtimeMessageThread({
   useEffect(() => {
     let active = true;
 
-    async function refreshMessages() {
-      const { data } = await supabase
-        .from("direct_messages")
-        .select("id, sender_id, recipient_id, content, created_at, read_at")
-        .or(
-          `and(sender_id.eq.${currentUserId},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${currentUserId})`
-        )
-        .order("created_at", { ascending: true })
-        .limit(200);
-
+    async function refreshIfActive() {
       if (!active) return;
-      setMessages((data as Message[]) || []);
-
-      await supabase
-        .from("direct_messages")
-        .update({ read_at: new Date().toISOString() })
-        .eq("sender_id", peerId)
-        .eq("recipient_id", currentUserId)
-        .is("read_at", null);
+      await refreshMessages();
     }
 
-    refreshMessages();
+    refreshIfActive();
 
     const channel = supabase
       .channel(`messages-thread-${currentUserId}-${peerId}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "direct_messages",
-          filter: `sender_id=eq.${peerId}`,
-        },
-        refreshMessages
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "direct_messages",
-          filter: `recipient_id=eq.${peerId}`,
-        },
-        refreshMessages
+        { event: "*", schema: "public", table: "direct_messages" },
+        (payload) => {
+          const row = (payload.new || payload.old) as Partial<Message>;
+          const touchesThread =
+            (row.sender_id === currentUserId && row.recipient_id === peerId) ||
+            (row.sender_id === peerId && row.recipient_id === currentUserId);
+
+          if (touchesThread) {
+            void refreshIfActive();
+          }
+        }
       )
       .subscribe();
 
+    const interval = window.setInterval(() => {
+      void refreshIfActive();
+    }, 3000);
+
     return () => {
       active = false;
+      window.clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [currentUserId, peerId, supabase]);
+  }, [currentUserId, peerId, refreshMessages, supabase]);
 
   return (
     <>
@@ -141,7 +144,16 @@ export default function RealtimeMessageThread({
         </div>
       </div>
 
-      <MessageComposer recipientId={peerId} recipientUsername={peerUsername} />
+      <MessageComposer
+        recipientId={peerId}
+        recipientUsername={peerUsername}
+        onSent={(message) => {
+          setMessages((current) => {
+            if (current.some((item) => item.id === message.id)) return current;
+            return [...current, message];
+          });
+        }}
+      />
     </>
   );
 }

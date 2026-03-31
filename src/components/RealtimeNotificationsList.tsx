@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getNotificationHref, getNotificationText } from "@/lib/notifications/content";
 import type { NotificationRecord } from "@/lib/notifications/types";
@@ -31,42 +31,45 @@ export default function RealtimeNotificationsList({ userId, initialNotifications
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [notifications, setNotifications] = useState<NotificationListItem[]>(initialNotifications);
 
-  useEffect(() => {
-    let active = true;
+  const refreshNotifications = useCallback(async () => {
+    try {
+      const response = await fetch("/api/notifications/list", {
+        method: "GET",
+        cache: "no-store",
+        credentials: "include",
+      });
 
-    async function refreshNotifications() {
-      try {
-        const response = await fetch("/api/notifications/list", {
-          method: "GET",
-          cache: "no-store",
-          credentials: "include",
-        });
-
-        if (!response.ok) return;
-        const payload = (await response.json()) as { notifications?: NotificationListItem[] };
-        if (!active) return;
-        setNotifications(payload.notifications || []);
-      } catch {
-        // ignore background refresh failure
-      }
+      if (!response.ok) return;
+      const payload = (await response.json()) as { notifications?: NotificationListItem[] };
+      setNotifications(payload.notifications || []);
+    } catch {
+      // ignore background refresh failure
     }
+  }, []);
 
-    refreshNotifications();
+  useEffect(() => {
+    void refreshNotifications();
 
     const channel = supabase
       .channel(`notifications-list-${userId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
-        refreshNotifications
+        () => {
+          void refreshNotifications();
+        }
       )
       .subscribe();
 
+    const interval = window.setInterval(() => {
+      void refreshNotifications();
+    }, 5000);
+
     return () => {
-      active = false;
+      window.clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [supabase, userId]);
+  }, [refreshNotifications, supabase, userId]);
 
   if (!notifications.length) {
     return <div className="card text-sm text-muted">No notifications yet.</div>;

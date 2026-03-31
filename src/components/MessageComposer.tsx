@@ -8,9 +8,17 @@ import { createNotificationAndDeliver } from "@/lib/notifications/client";
 type MessageComposerProps = {
   recipientId: string;
   recipientUsername: string;
+  onSent?: (message: {
+    id: string;
+    sender_id: string;
+    recipient_id: string;
+    content: string;
+    created_at: string;
+    read_at: string | null;
+  }) => void;
 };
 
-export default function MessageComposer({ recipientId, recipientUsername }: MessageComposerProps) {
+export default function MessageComposer({ recipientId, recipientUsername, onSent }: MessageComposerProps) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const router = useRouter();
   const [content, setContent] = useState("");
@@ -31,29 +39,42 @@ export default function MessageComposer({ recipientId, recipientUsername }: Mess
       return;
     }
 
-    const { data: insertedMessage, error } = await supabase.from("direct_messages").insert({
-      sender_id: user.id,
-      recipient_id: recipientId,
-      content: trimmed,
-    }).select("id").maybeSingle();
+    setContent("");
+
+    const { data: insertedMessage, error } = await supabase
+      .from("direct_messages")
+      .insert({
+        sender_id: user.id,
+        recipient_id: recipientId,
+        content: trimmed,
+      })
+      .select("id, sender_id, recipient_id, content, created_at, read_at")
+      .single();
 
     if (error) {
       setError(error.message);
+      setContent(trimmed);
       setLoading(false);
       return;
     }
 
-    await createNotificationAndDeliver({
-      userId: recipientId,
-      actorId: user.id,
-      type: "message",
-      messageId: insertedMessage?.id ?? null,
-      metadata: {},
-    });
+    if (insertedMessage) {
+      onSent?.(insertedMessage);
+    }
 
-    setContent("");
+    try {
+      await createNotificationAndDeliver({
+        userId: recipientId,
+        actorId: user.id,
+        type: "message",
+        messageId: insertedMessage?.id ?? null,
+        metadata: {},
+      });
+    } catch {
+      // Keep message UX working even if notification creation fails.
+    }
+
     setLoading(false);
-    router.refresh();
   }
 
   return (

@@ -1,10 +1,10 @@
-export const dynamic = "force-dynamic";
-
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import MarkNotificationsReadButton from "@/components/MarkNotificationsReadButton";
 import RealtimeNotificationsList from "@/components/RealtimeNotificationsList";
+
+export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
   const supabase = await createSupabaseServerClient();
@@ -12,15 +12,14 @@ export default async function NotificationsPage() {
 
   if (!user) redirect("/login?redirect_to=/notifications");
 
-  const { data } = await supabase
+  const { data: notifications } = await supabase
     .from("notifications")
     .select("id, user_id, actor_id, type, post_id, comment_id, group_id, message_id, metadata, read_at, created_at, profiles!notifications_actor_id_fkey(username, display_name)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
 
-  const notifications = data ?? [];
-  const unreadCount = notifications.filter((item) => !item.read_at).length;
+  const unreadCount = (notifications || []).filter((item) => !item.read_at).length;
 
   return (
     <main className="container-shell py-10">
@@ -39,17 +38,17 @@ export default async function NotificationsPage() {
           </div>
         </div>
 
-        {notifications.length ? (
-          <RealtimeNotificationsList userId={user.id} initialNotifications={notifications as any} />
-        ) : (
+        <RealtimeNotificationsList userId={user.id} initialNotifications={(notifications || []) as any} />
+
+        {!(notifications || []).length ? (
           <div className="card space-y-4">
-            <p className="text-sm text-muted">No notifications yet. Once people interact with your posts, follows, groups, invites, or messages, they will show up here.</p>
+            <p className="text-sm text-muted">Once people interact with your posts, follows, groups, invites, or messages, they will show up here.</p>
             <div className="flex flex-wrap gap-3">
               <Link href="/feed" className="button-primary">Go to feed</Link>
               <Link href="/invite" className="button-secondary">Invite people</Link>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </main>
   );
