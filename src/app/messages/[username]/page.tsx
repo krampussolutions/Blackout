@@ -1,22 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import MessageComposer from "@/components/MessageComposer";
 import RealtimeMessageThread from "@/components/RealtimeMessageThread";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type MessageThreadPageProps = {
   params: Promise<{ username: string }>;
 };
-
-function formatMessageTime(value: string) {
-  return new Date(value).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export default async function MessageThreadPage({
   params,
@@ -103,26 +93,11 @@ export default async function MessageThreadPage({
         </aside>
 
         <section className="space-y-4">
-          <div className="card space-y-4">
-            <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
-              <div>
-                <h2 className="text-lg font-semibold text-text">Conversation</h2>
-                <p className="text-sm text-muted">
-                  Direct messages are private between you and @{peer.username}.
-                </p>
-              </div>
-            </div>
-
-            <RealtimeMessageThread
-              currentUserId={user.id}
-              peerId={peer.id}
-              initialMessages={(messages || []) as any}
-            />
-          </div>
-
-          <MessageComposer
-            recipientId={peer.id}
-            recipientUsername={peer.username}
+          <RealtimeMessageThread
+            currentUserId={user.id}
+            peerId={peer.id}
+            peerUsername={peer.username}
+            initialMessages={(messages || []) as any}
           />
         </section>
       </div>

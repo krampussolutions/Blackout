@@ -10,7 +10,10 @@ type CommentItem = {
   id: string;
   content: string;
   created_at?: string | null;
-  profiles?: { username?: string | null; display_name?: string | null } | { username?: string | null; display_name?: string | null }[] | null;
+  profiles?:
+    | { username?: string | null; display_name?: string | null }
+    | { username?: string | null; display_name?: string | null }[]
+    | null;
 };
 
 type CommentSectionProps = {
@@ -20,20 +23,27 @@ type CommentSectionProps = {
   postTitle?: string;
 };
 
-export default function CommentSection({ postId, comments, postOwnerId = null, postTitle = "" }: CommentSectionProps) {
+export default function CommentSection({
+  postId,
+  comments,
+  postOwnerId = null,
+  postTitle = "",
+}: CommentSectionProps) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const router = useRouter();
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [items, setItems] = useState<CommentItem[]>(comments || []);
+  const [localComments, setLocalComments] = useState<CommentItem[]>(comments);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    if (!content.trim()) return;
+    if (!content.trim() || loading) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       router.push(`/login?next=/posts/${postId}`);
       return;
@@ -41,18 +51,6 @@ export default function CommentSection({ postId, comments, postOwnerId = null, p
 
     setLoading(true);
     const trimmed = content.trim();
-    const optimisticId = `temp-${Date.now()}`;
-    const optimisticComment: CommentItem = {
-      id: optimisticId,
-      content: trimmed,
-      created_at: new Date().toISOString(),
-      profiles: {
-        username: user.user_metadata?.username ?? "you",
-        display_name: user.user_metadata?.display_name ?? user.user_metadata?.username ?? "You",
-      },
-    };
-
-    setItems((current) => [...current, optimisticComment]);
 
     const { data: insertedComment, error } = await supabase
       .from("comments")
@@ -61,18 +59,20 @@ export default function CommentSection({ postId, comments, postOwnerId = null, p
         user_id: user.id,
         content: trimmed,
       })
-      .select("id, content, created_at, profiles:profiles!comments_user_id_fkey(username, display_name)")
-      .single();
+      .select("id, content, created_at, profiles!comments_user_id_fkey(username, display_name)")
+      .maybeSingle();
 
     setLoading(false);
 
     if (error) {
-      setItems((current) => current.filter((item) => item.id !== optimisticId));
       setError(error.message);
       return;
     }
 
-    setItems((current) => current.map((item) => (item.id === optimisticId ? (insertedComment as CommentItem) : item)));
+    if (insertedComment) {
+      setLocalComments((current) => [...current, insertedComment as CommentItem]);
+    }
+    setContent("");
 
     if (postOwnerId && postOwnerId !== user.id) {
       await createNotificationAndDeliver({
@@ -88,7 +88,6 @@ export default function CommentSection({ postId, comments, postOwnerId = null, p
       });
     }
 
-    setContent("");
     router.refresh();
   }
 
@@ -104,30 +103,40 @@ export default function CommentSection({ postId, comments, postOwnerId = null, p
             placeholder="Add your comment to the discussion..."
             rows={4}
           />
-          {error ? <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div> : null}
+          {error ? (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              {error}
+            </div>
+          ) : null}
           <button type="submit" className="button-primary" disabled={loading}>
             {loading ? "Posting..." : "Post comment"}
           </button>
         </form>
       </div>
 
-      {items.length ? items.map((comment) => {
-        const author = Array.isArray(comment.profiles) ? comment.profiles[0] : comment.profiles;
-        const username = author?.username || "member";
-        const displayName = author?.display_name || username;
-        return (
-          <div key={comment.id} className="card">
-            <div className="flex items-center gap-2 text-sm">
-              <Link href={`/profile/${username}`} className="font-semibold text-text hover:underline">{displayName}</Link>
-              <span className="text-muted">@{username}</span>
-              <span className="text-xs text-muted">
-                {comment.created_at ? new Date(comment.created_at).toLocaleString() : "Just now"}
-              </span>
+      {localComments.length ? (
+        localComments.map((comment) => {
+          const author = Array.isArray(comment.profiles) ? comment.profiles[0] : comment.profiles;
+          const username = author?.username || "member";
+          const displayName = author?.display_name || username;
+          return (
+            <div key={comment.id} className="card">
+              <div className="flex items-center gap-2 text-sm">
+                <Link href={`/profile/${username}`} className="font-semibold text-text hover:underline">
+                  {displayName}
+                </Link>
+                <span className="text-muted">@{username}</span>
+                <span className="text-xs text-muted">
+                  {comment.created_at ? new Date(comment.created_at).toLocaleString() : "Just now"}
+                </span>
+              </div>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted">{comment.content}</p>
             </div>
-            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted">{comment.content}</p>
-          </div>
-        );
-      }) : <div className="card text-sm text-muted">No comments yet.</div>}
+          );
+        })
+      ) : (
+        <div className="card text-sm text-muted">No comments yet.</div>
+      )}
     </div>
   );
 }
