@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { createNotificationAndDeliver } from "@/lib/notifications/client";
 
 type GroupJoinButtonProps = {
   groupId?: string | null;
@@ -63,11 +64,11 @@ export default function GroupJoinButton({
           .maybeSingle();
 
         if (groupRow?.created_by && groupRow.created_by !== user.id) {
-          await supabase.from("notifications").insert({
-            user_id: groupRow.created_by,
-            actor_id: user.id,
+          await createNotificationAndDeliver({
+            userId: groupRow.created_by,
+            actorId: user.id,
             type: "group_join",
-            group_id: groupId,
+            groupId: groupId,
             metadata: { group_slug: groupRow.slug, group_name: groupRow.name },
           });
         }

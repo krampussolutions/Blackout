@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { createNotificationAndDeliver } from "@/lib/notifications/client";
 
 type MessageComposerProps = {
   recipientId: string;
@@ -42,11 +43,11 @@ export default function MessageComposer({ recipientId, recipientUsername }: Mess
       return;
     }
 
-    await supabase.from("notifications").insert({
-      user_id: recipientId,
-      actor_id: user.id,
+    await createNotificationAndDeliver({
+      userId: recipientId,
+      actorId: user.id,
       type: "message",
-      message_id: insertedMessage?.id ?? null,
+      messageId: insertedMessage?.id ?? null,
       metadata: {},
     });
 

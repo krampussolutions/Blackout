@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -37,6 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-background text-text antialiased">
+        <ServiceWorkerRegistrar />
         <Nav />
         {children}
         <Footer />

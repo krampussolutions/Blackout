@@ -23,7 +23,7 @@ create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   actor_id uuid references public.profiles(id) on delete cascade,
-  type text not null check (type in ('like', 'comment', 'follow', 'group_join', 'message', 'system')),
+  type text not null check (type in ('like', 'comment', 'follow', 'group_join', 'message', 'invite_accepted', 'system')),
   post_id uuid references public.posts(id) on delete cascade,
   comment_id uuid references public.comments(id) on delete cascade,
   group_id uuid references public.groups(id) on delete cascade,
@@ -43,6 +43,41 @@ create table if not exists public.invite_links (
   created_at timestamptz not null default now()
 );
 create index if not exists invite_links_inviter_idx on public.invite_links (inviter_id, created_at desc);
+
+
+create table if not exists public.notification_preferences (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  email_enabled boolean not null default true,
+  email_like boolean not null default true,
+  email_comment boolean not null default true,
+  email_follow boolean not null default true,
+  email_group_join boolean not null default true,
+  email_message boolean not null default true,
+  email_invite_accepted boolean not null default true,
+  email_system boolean not null default true,
+  push_enabled boolean not null default true,
+  push_like boolean not null default true,
+  push_comment boolean not null default true,
+  push_follow boolean not null default true,
+  push_group_join boolean not null default true,
+  push_message boolean not null default true,
+  push_invite_accepted boolean not null default true,
+  push_system boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text,
+  auth text,
+  user_agent text,
+  created_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now()
+);
+create index if not exists push_subscriptions_user_idx on public.push_subscriptions (user_id, created_at desc);
 
 create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
@@ -115,23 +150,41 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  inviter uuid;
 begin
+  inviter := (
+    select inviter_id
+    from public.invite_links
+    where code = nullif(new.raw_user_meta_data ->> 'invite_code', '')
+    limit 1
+  );
+
   insert into public.profiles (id, username, display_name, invited_by)
   values (
     new.id,
     lower(coalesce(nullif(new.raw_user_meta_data ->> 'username', ''), split_part(new.email, '@', 1))),
     coalesce(nullif(new.raw_user_meta_data ->> 'display_name', ''), split_part(new.email, '@', 1)),
-    (
-      select inviter_id
-      from public.invite_links
-      where code = nullif(new.raw_user_meta_data ->> 'invite_code', '')
-      limit 1
-    )
+    inviter
   )
   on conflict (id) do update
   set username = excluded.username,
       display_name = excluded.display_name,
       invited_by = coalesce(public.profiles.invited_by, excluded.invited_by);
+
+  insert into public.notification_preferences (user_id)
+  values (new.id)
+  on conflict (user_id) do nothing;
+
+  if inviter is not null and inviter <> new.id then
+    insert into public.notifications (user_id, actor_id, type, metadata)
+    values (
+      inviter,
+      new.id,
+      'invite_accepted',
+      jsonb_build_object('text', coalesce(nullif(new.raw_user_meta_data ->> 'display_name', ''), split_part(new.email, '@', 1)) || ' joined Blackout Network from your invite.')
+    );
+  end if;
 
   return new;
 end;
@@ -150,6 +203,8 @@ alter table public.likes enable row level security;
 alter table public.follows enable row level security;
 alter table public.invite_links enable row level security;
 alter table public.notifications enable row level security;
+alter table public.notification_preferences enable row level security;
+alter table public.push_subscriptions enable row level security;
 alter table public.post_reports enable row level security;
 
  drop policy if exists "Public profiles are viewable by everyone" on public.profiles;
@@ -184,6 +239,13 @@ drop policy if exists "Users can view their invite links" on public.invite_links
 drop policy if exists "Users can create their invite links" on public.invite_links;
 drop policy if exists "Users can update their invite links" on public.invite_links;
 drop policy if exists "Users can delete their invite links" on public.invite_links;
+drop policy if exists "Users can view their own notification preferences" on public.notification_preferences;
+drop policy if exists "Users can upsert their own notification preferences" on public.notification_preferences;
+drop policy if exists "Users can update their own notification preferences" on public.notification_preferences;
+drop policy if exists "Users can view their own push subscriptions" on public.push_subscriptions;
+drop policy if exists "Users can create their own push subscriptions" on public.push_subscriptions;
+drop policy if exists "Users can update their own push subscriptions" on public.push_subscriptions;
+drop policy if exists "Users can delete their own push subscriptions" on public.push_subscriptions;
 
 drop policy if exists "Avatar images are public" on storage.objects;
 drop policy if exists "Authenticated users can upload avatars" on storage.objects;
@@ -254,6 +316,14 @@ create policy "Users can view their invite links" on public.invite_links for sel
 create policy "Users can create their invite links" on public.invite_links for insert with check (auth.uid() = inviter_id);
 create policy "Users can update their invite links" on public.invite_links for update using (auth.uid() = inviter_id) with check (auth.uid() = inviter_id);
 create policy "Users can delete their invite links" on public.invite_links for delete using (auth.uid() = inviter_id);
+
+create policy "Users can view their own notification preferences" on public.notification_preferences for select using (auth.uid() = user_id);
+create policy "Users can upsert their own notification preferences" on public.notification_preferences for insert with check (auth.uid() = user_id);
+create policy "Users can update their own notification preferences" on public.notification_preferences for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Users can view their own push subscriptions" on public.push_subscriptions for select using (auth.uid() = user_id);
+create policy "Users can create their own push subscriptions" on public.push_subscriptions for insert with check (auth.uid() = user_id);
+create policy "Users can update their own push subscriptions" on public.push_subscriptions for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "Users can delete their own push subscriptions" on public.push_subscriptions for delete using (auth.uid() = user_id);
 
 create policy "Avatar images are public" on storage.objects for select using (bucket_id = 'avatars');
 create policy "Authenticated users can upload avatars" on storage.objects for insert with check (
