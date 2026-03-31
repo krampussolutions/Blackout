@@ -27,14 +27,15 @@ export default function RealtimeNotificationsList({ userId, initialNotifications
     let active = true;
 
     async function refreshNotifications() {
-      try {
-        const response = await fetch("/api/notifications/list", { cache: "no-store" });
-        if (!response.ok) return;
-        const payload = await response.json();
-        if (!active) return;
-        setNotifications((payload.notifications as NotificationListItem[]) || []);
-      } catch {
-        // Keep the last known list if refresh fails.
+      const { data } = await supabase
+        .from("notifications")
+        .select("id, user_id, actor_id, type, post_id, comment_id, group_id, message_id, metadata, read_at, created_at, profiles!notifications_actor_id_fkey(username, display_name)")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (active) {
+        setNotifications((data as NotificationListItem[]) || []);
       }
     }
 

@@ -26,6 +26,7 @@ export default function CommentSection({ postId, comments, postOwnerId = null, p
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [items, setItems] = useState<CommentItem[]>(comments || []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,17 +41,38 @@ export default function CommentSection({ postId, comments, postOwnerId = null, p
 
     setLoading(true);
     const trimmed = content.trim();
-    const { data: insertedComment, error } = await supabase.from("comments").insert({
-      post_id: postId,
-      user_id: user.id,
+    const optimisticId = `temp-${Date.now()}`;
+    const optimisticComment: CommentItem = {
+      id: optimisticId,
       content: trimmed,
-    }).select("id").maybeSingle();
+      created_at: new Date().toISOString(),
+      profiles: {
+        username: user.user_metadata?.username ?? "you",
+        display_name: user.user_metadata?.display_name ?? user.user_metadata?.username ?? "You",
+      },
+    };
+
+    setItems((current) => [...current, optimisticComment]);
+
+    const { data: insertedComment, error } = await supabase
+      .from("comments")
+      .insert({
+        post_id: postId,
+        user_id: user.id,
+        content: trimmed,
+      })
+      .select("id, content, created_at, profiles:profiles!comments_user_id_fkey(username, display_name)")
+      .single();
+
     setLoading(false);
 
     if (error) {
+      setItems((current) => current.filter((item) => item.id !== optimisticId));
       setError(error.message);
       return;
     }
+
+    setItems((current) => current.map((item) => (item.id === optimisticId ? (insertedComment as CommentItem) : item)));
 
     if (postOwnerId && postOwnerId !== user.id) {
       await createNotificationAndDeliver({
@@ -89,7 +111,7 @@ export default function CommentSection({ postId, comments, postOwnerId = null, p
         </form>
       </div>
 
-      {comments.length ? comments.map((comment) => {
+      {items.length ? items.map((comment) => {
         const author = Array.isArray(comment.profiles) ? comment.profiles[0] : comment.profiles;
         const username = author?.username || "member";
         const displayName = author?.display_name || username;
