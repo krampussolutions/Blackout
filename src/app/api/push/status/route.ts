@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
@@ -17,7 +18,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing endpoint" }, { status: 400 });
   }
 
-  const { data: subscription, error } = await supabase
+  const admin = createSupabaseAdminClient();
+  const { data: subscription, error } = await admin
     .from("push_subscriptions")
     .select("user_id")
     .eq("endpoint", body.endpoint)
@@ -29,5 +31,7 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     enabled: subscription?.user_id === user.id,
+    assignedToCurrentUser: subscription?.user_id === user.id,
+    assignedElsewhere: Boolean(subscription?.user_id && subscription.user_id !== user.id),
   });
 }

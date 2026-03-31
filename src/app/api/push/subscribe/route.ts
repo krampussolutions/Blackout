@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json().catch(() => null) as {
+  const body = (await request.json().catch(() => null)) as {
     endpoint?: string;
     keys?: { p256dh?: string; auth?: string };
   } | null;
@@ -20,7 +21,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing endpoint" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("push_subscriptions").upsert(
+  const admin = createSupabaseAdminClient();
+
+  const { error } = await admin.from("push_subscriptions").upsert(
     {
       user_id: user.id,
       endpoint: body.endpoint,
@@ -36,7 +39,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  await supabase.from("notification_preferences").upsert(
+  const { error: prefError } = await admin.from("notification_preferences").upsert(
     {
       user_id: user.id,
       push_enabled: true,
@@ -44,6 +47,10 @@ export async function POST(request: NextRequest) {
     },
     { onConflict: "user_id" }
   );
+
+  if (prefError) {
+    return NextResponse.json({ error: prefError.message }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

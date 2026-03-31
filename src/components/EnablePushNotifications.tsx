@@ -8,10 +8,13 @@ type EnablePushNotificationsProps = {
   vapidPublicKey?: string;
 };
 
+type PushStatus = "unsupported" | "blocked" | "idle" | "enabled";
+
 export default function EnablePushNotifications({ vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "" }: EnablePushNotificationsProps) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const [status, setStatus] = useState<"unsupported" | "blocked" | "idle" | "enabled">("idle");
+  const [status, setStatus] = useState<PushStatus>("idle");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -20,11 +23,13 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
       if (typeof window === "undefined") return;
       if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
         setStatus("unsupported");
+        setErrorMessage("");
         return;
       }
 
       if (Notification.permission === "denied") {
         setStatus("blocked");
+        setErrorMessage("Your browser has notifications blocked for this site.");
         return;
       }
 
@@ -33,7 +38,10 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
         const subscription = await registration.pushManager.getSubscription();
 
         if (!subscription) {
-          if (!cancelled) setStatus("idle");
+          if (!cancelled) {
+            setStatus("idle");
+            setErrorMessage("");
+          }
           return;
         }
 
@@ -43,17 +51,33 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
           body: JSON.stringify({ endpoint: subscription.endpoint }),
         });
 
+        const data = (await response.json().catch(() => ({}))) as {
+          enabled?: boolean;
+          assignedElsewhere?: boolean;
+          error?: string;
+        };
+
         if (!response.ok) {
-          if (!cancelled) setStatus("idle");
+          if (!cancelled) {
+            setStatus("idle");
+            setErrorMessage(data.error || "Could not check browser push status.");
+          }
           return;
         }
 
-        const data = (await response.json()) as { enabled?: boolean };
         if (!cancelled) {
           setStatus(data.enabled ? "enabled" : "idle");
+          setErrorMessage(
+            data.assignedElsewhere
+              ? "This browser subscription belongs to a different account. Enabling push here will move it to this account."
+              : ""
+          );
         }
-      } catch {
-        if (!cancelled) setStatus("idle");
+      } catch (error) {
+        if (!cancelled) {
+          setStatus("idle");
+          setErrorMessage(error instanceof Error ? error.message : "Could not check browser push status.");
+        }
       }
     }
 
@@ -66,70 +90,105 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
 
   async function enablePush() {
     if (!vapidPublicKey) {
-      alert("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY.");
+      setErrorMessage("Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY in your environment variables.");
       return;
     }
 
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      window.location.href = "/login?redirect_to=/settings/notifications";
-      return;
-    }
+    setErrorMessage("");
 
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      setStatus(permission === "denied" ? "blocked" : "idle");
-      setLoading(false);
-      return;
-    }
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    const registration = await navigator.serviceWorker.ready;
-    let subscription = await registration.pushManager.getSubscription();
+      if (!user) {
+        window.location.href = "/login?redirect_to=/settings/notifications";
+        return;
+      }
 
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      if (typeof window === "undefined" || !("Notification" in window)) {
+        setStatus("unsupported");
+        setErrorMessage("This browser does not support notifications.");
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        setStatus(permission === "denied" ? "blocked" : "idle");
+        setErrorMessage(
+          permission === "denied"
+            ? "Browser permission is blocked. Allow notifications in your browser settings and try again."
+            : "Notification permission was dismissed."
+        );
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        });
+      }
+
+      const response = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subscription.toJSON()),
       });
-    }
 
-    const response = await fetch("/api/push/subscribe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(subscription.toJSON()),
-    });
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        setStatus("idle");
+        setErrorMessage(data.error || "Could not save this browser push subscription.");
+        return;
+      }
 
-    if (!response.ok) {
+      setStatus("enabled");
+      setErrorMessage("");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not enable browser push notifications.";
       setStatus("idle");
+      setErrorMessage(message);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setStatus("enabled");
-    setLoading(false);
   }
 
   async function disablePush() {
     setLoading(true);
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    setErrorMessage("");
 
-    if (subscription) {
-      const response = await fetch("/api/push/unsubscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ endpoint: subscription.endpoint }),
-      });
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
 
-      if (response.ok) {
+      if (subscription) {
+        const response = await fetch("/api/push/unsubscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        });
+
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        if (!response.ok) {
+          setErrorMessage(data.error || "Could not disable browser push for this device.");
+          return;
+        }
+
         await subscription.unsubscribe();
       }
-    }
 
-    setStatus("idle");
-    setLoading(false);
+      setStatus("idle");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not disable browser push notifications.";
+      setErrorMessage(message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (status === "unsupported") {
@@ -156,6 +215,7 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
               : "Push alerts are currently off on this device."}
         </span>
       </div>
+      {errorMessage ? <p className="text-sm text-red-400">{errorMessage}</p> : null}
     </div>
   );
 }
