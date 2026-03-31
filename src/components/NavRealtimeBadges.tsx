@@ -7,9 +7,10 @@ type Props = {
   userId: string;
   initialMessageCount: number;
   initialNotificationCount: number;
+  show: "messages" | "notifications";
 };
 
-export default function NavRealtimeBadges({ userId, initialMessageCount, initialNotificationCount }: Props) {
+export default function NavRealtimeBadges({ userId, initialMessageCount, initialNotificationCount, show }: Props) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [messageCount, setMessageCount] = useState(initialMessageCount);
   const [notificationCount, setNotificationCount] = useState(initialNotificationCount);
@@ -42,12 +43,12 @@ export default function NavRealtimeBadges({ userId, initialMessageCount, initial
 
   return (
     <>
-      {messageCount > 0 ? (
+      {show === "messages" && messageCount > 0 ? (
         <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
           {messageCount > 99 ? "99+" : messageCount}
         </span>
       ) : null}
-      {notificationCount > 0 ? (
+      {show === "notifications" && notificationCount > 0 ? (
         <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
           {notificationCount > 99 ? "99+" : notificationCount}
         </span>

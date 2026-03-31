@@ -63,8 +63,9 @@ export default async function Nav() {
                     <span className="inline-flex items-center gap-2">
                       <NavRealtimeBadges
                         userId={user.id}
-                        initialMessageCount={isMessages ? unreadMessages : 0}
-                        initialNotificationCount={isNotifications ? unreadNotifications : 0}
+                        show={isMessages ? "messages" : "notifications"}
+                        initialMessageCount={unreadMessages}
+                        initialNotificationCount={unreadNotifications}
                       />
                     </span>
                   ) : null}
