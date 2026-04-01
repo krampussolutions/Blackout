@@ -40,7 +40,7 @@ export function getNotificationHref(
     return `/messages/${actor.username}`;
   }
   if (notification.type === "invite_accepted") return "/invite";
-  return "/notifications";
+  return "/settings/notifications";
 }
 
 export function isChannelEnabled(

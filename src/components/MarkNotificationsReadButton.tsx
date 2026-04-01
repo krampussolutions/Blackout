@@ -15,7 +15,7 @@ export default function MarkNotificationsReadButton() {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      router.push("/login?redirect_to=/notifications");
+      router.push("/login?redirect_to=/settings/notifications");
       return;
     }
 

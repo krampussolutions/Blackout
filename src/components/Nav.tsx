@@ -13,7 +13,7 @@ const memberLinks = [
   { href: "/members", label: "Members" },
   { href: "/groups", label: "Groups" },
   { href: "/messages", label: "Messages" },
-  { href: "/notifications", label: "Alerts" },
+  { href: "/settings/notifications", label: "Alerts" },
   { href: "/posts/new", label: "Create" },
 ];
 
@@ -52,7 +52,7 @@ export default async function Nav() {
         <nav className="ml-auto flex items-center gap-1 md:gap-2">
           {links.map((link) => {
             const isMessages = link.href === "/messages";
-            const isAlerts = link.href === "/notifications";
+            const isAlerts = link.href === "/settings/notifications";
             return (
               <Link key={link.href} href={link.href} className="rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panelSoft hover:text-text">
                 <span className="inline-flex items-center gap-2">
@@ -64,7 +64,7 @@ export default async function Nav() {
                   ) : null}
                   {isAlerts && unreadNotificationCount > 0 ? (
                     <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
-                      {unreadCount > 99 ? "99+" : unreadCount}
+                      {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
                     </span>
                   ) : null}
                 </span>
