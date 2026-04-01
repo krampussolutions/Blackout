@@ -5,54 +5,58 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Props = {
   userId: string;
-  initialMessageCount: number;
-  initialNotificationCount: number;
-  show: "messages" | "notifications";
+  kind: "messages" | "notifications";
+  initialCount: number;
 };
 
-export default function NavRealtimeBadges({ userId, initialMessageCount, initialNotificationCount, show }: Props) {
+export default function NavRealtimeBadges({ userId, kind, initialCount }: Props) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const [messageCount, setMessageCount] = useState(initialMessageCount);
-  const [notificationCount, setNotificationCount] = useState(initialNotificationCount);
+  const [count, setCount] = useState(initialCount);
 
   useEffect(() => {
     let active = true;
 
-    async function refreshCounts() {
-      const [{ count: unreadMessages }, { count: unreadNotifications }] = await Promise.all([
-        supabase.from("direct_messages").select("id", { head: true, count: "exact" }).eq("recipient_id", userId).is("read_at", null),
-        supabase.from("notifications").select("id", { head: true, count: "exact" }).eq("user_id", userId).is("read_at", null),
-      ]);
+    async function refreshCount() {
+      const query =
+        kind === "messages"
+          ? supabase.from("direct_messages").select("id", { head: true, count: "exact" }).eq("recipient_id", userId).is("read_at", null)
+          : supabase.from("notifications").select("id", { head: true, count: "exact" }).eq("user_id", userId).is("read_at", null);
 
+      const { count: nextCount } = await query;
       if (!active) return;
-      setMessageCount(unreadMessages ?? 0);
-      setNotificationCount(unreadNotifications ?? 0);
+      setCount(nextCount ?? 0);
     }
 
+    refreshCount();
+
     const channel = supabase
-      .channel(`nav-badges-${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, refreshCounts)
-      .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages", filter: `recipient_id=eq.${userId}` }, refreshCounts)
+      .channel(`nav-badge-${kind}-${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: kind === "messages" ? "direct_messages" : "notifications",
+          filter: kind === "messages" ? `recipient_id=eq.${userId}` : `user_id=eq.${userId}`,
+        },
+        refreshCount,
+      )
       .subscribe();
+
+    const timer = window.setInterval(refreshCount, kind === "messages" ? 3000 : 5000);
 
     return () => {
       active = false;
+      window.clearInterval(timer);
       supabase.removeChannel(channel);
     };
-  }, [supabase, userId]);
+  }, [kind, supabase, userId]);
+
+  if (count <= 0) return null;
 
   return (
-    <>
-      {show === "messages" && messageCount > 0 ? (
-        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
-          {messageCount > 99 ? "99+" : messageCount}
-        </span>
-      ) : null}
-      {show === "notifications" && notificationCount > 0 ? (
-        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
-          {notificationCount > 99 ? "99+" : notificationCount}
-        </span>
-      ) : null}
-    </>
+    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
+      {count > 99 ? "99+" : count}
+    </span>
   );
 }

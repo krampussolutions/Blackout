@@ -43,11 +43,11 @@ export async function createNotificationAndDeliver(input: {
     });
 
     if (!response.ok) {
-      const payload = await response.text().catch(() => "");
-      console.error("Notification delivery failed", response.status, payload);
+      const details = await response.text().catch(() => "");
+      console.error("Notification delivery failed", response.status, details);
     }
-  } catch (deliveryError) {
-    console.error("Notification delivery request failed", deliveryError);
+  } catch (fetchError) {
+    console.error("Notification delivery request failed", fetchError);
   }
 
   return notification;

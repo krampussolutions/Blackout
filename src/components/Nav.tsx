@@ -15,22 +15,21 @@ const memberLinks = [
   { href: "/groups", label: "Groups" },
   { href: "/messages", label: "Messages" },
   { href: "/settings/notifications", label: "Alerts" },
+  { href: "/invite", label: "Invite" },
   { href: "/posts/new", label: "Create" },
 ];
 
 export default async function Nav() {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   let profileUsername: string | null = null;
   let membershipTier = "free";
-  let unreadCount = 0;
-  let unreadNotificationCount = 0;
+  let unreadMessages = 0;
+  let unreadNotifications = 0;
 
   if (user) {
-    const [{ data: profile }, { count }, { count: notificationCount }] = await Promise.all([
+    const [{ data: profile }, { count: messageCount }, { count: notificationCount }] = await Promise.all([
       supabase.from("profiles").select("username, membership_tier").eq("id", user.id).maybeSingle(),
       supabase.from("direct_messages").select("id", { count: "exact", head: true }).eq("recipient_id", user.id).is("read_at", null),
       supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null),
@@ -38,8 +37,8 @@ export default async function Nav() {
 
     profileUsername = profile?.username ?? null;
     membershipTier = profile?.membership_tier ?? "free";
-    unreadCount = count ?? 0;
-    unreadNotificationCount = notificationCount ?? 0;
+    unreadMessages = messageCount ?? 0;
+    unreadNotifications = notificationCount ?? 0;
   }
 
   const links = user ? memberLinks : publicLinks;
@@ -55,27 +54,13 @@ export default async function Nav() {
         <nav className="ml-auto flex items-center gap-1 md:gap-2">
           {links.map((link) => {
             const isMessages = link.href === "/messages";
-            const isAlerts = link.href === "/settings/notifications";
+            const isNotifications = link.href === "/settings/notifications";
             return (
               <Link key={link.href} href={link.href} className="rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panelSoft hover:text-text">
                 <span className="inline-flex items-center gap-2">
                   {link.label}
-                  {user && isMessages ? (
-                    <NavRealtimeBadges
-                      userId={user.id}
-                      initialMessageCount={unreadCount}
-                      initialNotificationCount={unreadNotificationCount}
-                      show="messages"
-                    />
-                  ) : null}
-                  {user && isAlerts ? (
-                    <NavRealtimeBadges
-                      userId={user.id}
-                      initialMessageCount={unreadCount}
-                      initialNotificationCount={unreadNotificationCount}
-                      show="notifications"
-                    />
-                  ) : null}
+                  {user && isMessages ? <NavRealtimeBadges userId={user.id} kind="messages" initialCount={unreadMessages} /> : null}
+                  {user && isNotifications ? <NavRealtimeBadges userId={user.id} kind="notifications" initialCount={unreadNotifications} /> : null}
                 </span>
               </Link>
             );

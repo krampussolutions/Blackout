@@ -117,6 +117,9 @@ export async function POST(request: NextRequest) {
     });
 
     emailDelivered = !error;
+    if (error) {
+      console.error("Resend delivery failed", error);
+    }
   }
 
   if (subscriptions?.length && isWebPushConfigured() && isChannelEnabled(preferences, "push", notification.type)) {
@@ -133,7 +136,8 @@ export async function POST(request: NextRequest) {
           if (response.ok || response.status === 201) {
             pushDelivered = true;
           }
-        } catch {
+        } catch (pushError) {
+          console.error("Web push delivery failed", pushError);
           failedEndpoints.push(subscription.endpoint);
         }
       })
