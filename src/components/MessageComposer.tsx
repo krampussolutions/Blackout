@@ -7,9 +7,21 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 type MessageComposerProps = {
   recipientId: string;
   recipientUsername: string;
+  onSent?: (message: {
+    id: string;
+    sender_id: string;
+    recipient_id: string;
+    content: string;
+    created_at: string;
+    read_at: string | null;
+  }) => void;
 };
 
-export default function MessageComposer({ recipientId, recipientUsername }: MessageComposerProps) {
+export default function MessageComposer({
+  recipientId,
+  recipientUsername,
+  onSent,
+}: MessageComposerProps) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const router = useRouter();
   const [content, setContent] = useState("");
@@ -24,17 +36,24 @@ export default function MessageComposer({ recipientId, recipientUsername }: Mess
     setLoading(true);
     setError("");
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
       router.push(`/login?redirect_to=/messages/${recipientUsername}`);
       return;
     }
 
-    const { error } = await supabase.from("direct_messages").insert({
-      sender_id: user.id,
-      recipient_id: recipientId,
-      content: trimmed,
-    });
+    const { data, error } = await supabase
+      .from("direct_messages")
+      .insert({
+        sender_id: user.id,
+        recipient_id: recipientId,
+        content: trimmed,
+      })
+      .select("id, sender_id, recipient_id, content, created_at, read_at")
+      .single();
 
     if (error) {
       setError(error.message);
@@ -42,15 +61,14 @@ export default function MessageComposer({ recipientId, recipientUsername }: Mess
       return;
     }
 
-    await supabase.from("notifications").insert({
-      user_id: recipientId,
-      actor_id: user.id,
-      type: "message",
-      metadata: { excerpt: trimmed.slice(0, 120) },
-    });
-
     setContent("");
     setLoading(false);
+
+    if (data) {
+      onSent?.(data);
+      return;
+    }
+
     router.refresh();
   }
 
