@@ -19,7 +19,7 @@ function defaultPreferences(userId: string): NotificationPreferences {
     email_message: true,
     email_invite_accepted: true,
     email_system: true,
-    push_enabled: true,
+    push_enabled: false,
     push_like: true,
     push_comment: true,
     push_follow: true,

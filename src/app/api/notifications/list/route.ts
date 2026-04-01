@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+type ActorProfile = { id: string; username: string | null; display_name: string | null };
+
 export async function GET() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -13,9 +15,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("notifications")
-    .select(
-      "id, user_id, actor_id, type, post_id, comment_id, group_id, message_id, metadata, read_at, created_at, profiles!notifications_actor_id_fkey(username, display_name)"
-    )
+    .select("id, user_id, actor_id, type, post_id, comment_id, group_id, message_id, metadata, read_at, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -24,5 +24,22 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ notifications: data || [] });
+  const actorIds = Array.from(new Set((data || []).map((item) => item.actor_id).filter(Boolean))) as string[];
+  let actorMap = new Map<string, ActorProfile>();
+
+  if (actorIds.length) {
+    const { data: actors } = await supabase
+      .from("profiles")
+      .select("id, username, display_name")
+      .in("id", actorIds);
+
+    actorMap = new Map((actors || []).map((actor) => [actor.id, actor as ActorProfile]));
+  }
+
+  const notifications = (data || []).map((item) => ({
+    ...item,
+    actor: item.actor_id ? actorMap.get(item.actor_id) || null : null,
+  }));
+
+  return NextResponse.json({ notifications });
 }

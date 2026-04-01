@@ -6,20 +6,38 @@ import RealtimeNotificationsList from "@/components/RealtimeNotificationsList";
 
 export const dynamic = "force-dynamic";
 
+type ActorProfile = { id: string; username: string | null; display_name: string | null };
+
 export default async function NotificationsPage() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login?redirect_to=/notifications");
 
-  const { data: notifications } = await supabase
+  const { data } = await supabase
     .from("notifications")
-    .select("id, user_id, actor_id, type, post_id, comment_id, group_id, message_id, metadata, read_at, created_at, profiles!notifications_actor_id_fkey(username, display_name)")
+    .select("id, user_id, actor_id, type, post_id, comment_id, group_id, message_id, metadata, read_at, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
 
-  const unreadCount = (notifications || []).filter((item) => !item.read_at).length;
+  const actorIds = Array.from(new Set((data || []).map((item) => item.actor_id).filter(Boolean))) as string[];
+  let actorMap = new Map<string, ActorProfile>();
+
+  if (actorIds.length) {
+    const { data: actors } = await supabase
+      .from("profiles")
+      .select("id, username, display_name")
+      .in("id", actorIds);
+    actorMap = new Map((actors || []).map((actor) => [actor.id, actor as ActorProfile]));
+  }
+
+  const notifications = (data || []).map((item) => ({
+    ...item,
+    actor: item.actor_id ? actorMap.get(item.actor_id) || null : null,
+  }));
+
+  const unreadCount = notifications.filter((item) => !item.read_at).length;
 
   return (
     <main className="container-shell py-10">
@@ -38,9 +56,9 @@ export default async function NotificationsPage() {
           </div>
         </div>
 
-        <RealtimeNotificationsList userId={user.id} initialNotifications={(notifications || []) as any} />
+        <RealtimeNotificationsList userId={user.id} initialNotifications={notifications as any} />
 
-        {!(notifications || []).length ? (
+        {!notifications.length ? (
           <div className="card space-y-4">
             <p className="text-sm text-muted">Once people interact with your posts, follows, groups, invites, or messages, they will show up here.</p>
             <div className="flex flex-wrap gap-3">

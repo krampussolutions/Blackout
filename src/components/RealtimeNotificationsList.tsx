@@ -6,11 +6,10 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getNotificationHref, getNotificationText } from "@/lib/notifications/content";
 import type { NotificationRecord } from "@/lib/notifications/types";
 
+type ActorProfile = { username: string | null; display_name: string | null };
+
 type NotificationListItem = NotificationRecord & {
-  profiles:
-    | { username: string | null; display_name: string | null }
-    | { username: string | null; display_name: string | null }[]
-    | null;
+  actor: ActorProfile | null;
 };
 
 type Props = {
@@ -48,6 +47,10 @@ export default function RealtimeNotificationsList({ userId, initialNotifications
   }, []);
 
   useEffect(() => {
+    setNotifications(initialNotifications);
+  }, [initialNotifications]);
+
+  useEffect(() => {
     void refreshNotifications();
 
     const channel = supabase
@@ -67,7 +70,7 @@ export default function RealtimeNotificationsList({ userId, initialNotifications
 
     return () => {
       window.clearInterval(interval);
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [refreshNotifications, supabase, userId]);
 
@@ -78,7 +81,7 @@ export default function RealtimeNotificationsList({ userId, initialNotifications
   return (
     <div className="grid gap-4">
       {notifications.map((notification) => {
-        const actor = Array.isArray(notification.profiles) ? notification.profiles[0] : notification.profiles;
+        const actor = notification.actor;
         return (
           <Link
             key={notification.id}

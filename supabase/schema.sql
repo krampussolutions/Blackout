@@ -55,7 +55,7 @@ create table if not exists public.notification_preferences (
   email_message boolean not null default true,
   email_invite_accepted boolean not null default true,
   email_system boolean not null default true,
-  push_enabled boolean not null default true,
+  push_enabled boolean not null default false,
   push_like boolean not null default true,
   push_comment boolean not null default true,
   push_follow boolean not null default true,

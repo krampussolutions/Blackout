@@ -16,6 +16,17 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
+  async function getReadyRegistration() {
+    if (!("serviceWorker" in navigator)) {
+      throw new Error("Service workers are not supported in this browser.");
+    }
+
+    const existing = await navigator.serviceWorker.getRegistration("/");
+    if (existing) return existing;
+
+    return navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -34,7 +45,7 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
       }
 
       try {
-        const registration = await navigator.serviceWorker.ready;
+        const registration = await getReadyRegistration();
         const subscription = await registration.pushManager.getSubscription();
 
         if (!subscription) {
@@ -86,7 +97,7 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [vapidPublicKey]);
 
   async function enablePush() {
     if (!vapidPublicKey) {
@@ -124,14 +135,18 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
         return;
       }
 
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await getReadyRegistration();
       let subscription = await registration.pushManager.getSubscription();
 
       if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-        });
+        try {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+          });
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : "The browser could not create a push subscription. Check your VAPID public key and site permissions.");
+        }
       }
 
       const response = await fetch("/api/push/subscribe", {
@@ -163,7 +178,7 @@ export default function EnablePushNotifications({ vapidPublicKey = process.env.N
     setErrorMessage("");
 
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await getReadyRegistration();
       const subscription = await registration.pushManager.getSubscription();
 
       if (subscription) {
