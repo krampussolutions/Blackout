@@ -13,10 +13,10 @@ type PostCardProps = {
   comments: number;
   likes?: number;
   initialLiked?: boolean;
+  postAuthorId?: string;
   isOwner?: boolean;
   groupName?: string;
   groupSlug?: string;
-  postOwnerId?: string | null;
 };
 
 export default function PostCard({
@@ -29,10 +29,10 @@ export default function PostCard({
   comments,
   likes = 0,
   initialLiked = false,
+  postAuthorId,
   isOwner = false,
   groupName,
   groupSlug,
-  postOwnerId = null,
 }: PostCardProps) {
   const avatar = author.slice(0, 2).toUpperCase();
   const displayName = authorDisplayName || author;
@@ -71,7 +71,7 @@ export default function PostCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
-        <LikeButton postId={id} postOwnerId={postOwnerId} postTitle={title} initialLiked={initialLiked} initialCount={likes} />
+        <LikeButton postId={id} postAuthorId={postAuthorId} initialLiked={initialLiked} initialCount={likes} />
         <Link href={`/posts/${id}`} className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">Comment</Link>
         <Link href={`/posts/${id}`} className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">View Post</Link>
         {!isOwner ? <ReportPostButton postId={id} compact /> : null}

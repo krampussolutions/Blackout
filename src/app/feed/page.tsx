@@ -214,6 +214,7 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
               comments: commentCount || 0,
               likes: likeCount || 0,
               initialLiked: likedPostIds.has(post.id),
+              postAuthorId: post.user_id,
               isOwner: user?.id === post.user_id,
               groupName: group?.name || undefined,
               groupSlug: group?.slug || undefined,

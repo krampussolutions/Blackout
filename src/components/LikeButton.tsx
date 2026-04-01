@@ -3,12 +3,10 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { createNotificationAndDeliver } from "@/lib/notifications/client";
 
 type LikeButtonProps = {
   postId: string;
-  postOwnerId?: string | null;
-  postTitle?: string;
+  postAuthorId?: string | null;
   initialLiked?: boolean;
   initialCount?: number;
   className?: string;
@@ -16,8 +14,7 @@ type LikeButtonProps = {
 
 export default function LikeButton({
   postId,
-  postOwnerId = null,
-  postTitle = "",
+  postAuthorId,
   initialLiked = false,
   initialCount = 0,
   className = "",
@@ -48,19 +45,16 @@ export default function LikeButton({
     } else {
       const { error } = await supabase.from("likes").insert({ post_id: postId, user_id: user.id });
       if (!error) {
-        setLiked(true);
-        setCount((value) => value + 1);
-
-        if (postOwnerId && postOwnerId !== user.id) {
-          await createNotificationAndDeliver({
-            userId: postOwnerId,
-            actorId: user.id,
+        if (postAuthorId && postAuthorId !== user.id) {
+          await supabase.from("notifications").insert({
+            user_id: postAuthorId,
+            actor_id: user.id,
             type: "like",
-            postId: postId,
-            metadata: { post_title: postTitle || null },
+            post_id: postId,
           });
         }
-
+        setLiked(true);
+        setCount((value) => value + 1);
         router.refresh();
       }
     }

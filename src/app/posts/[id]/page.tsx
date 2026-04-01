@@ -65,14 +65,14 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           <p className="mt-6 whitespace-pre-wrap text-sm leading-7 text-muted">{post.content}</p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted">
-            <LikeButton postId={post.id} postOwnerId={post.user_id} postTitle={post.title} initialLiked={Boolean(likeRow)} initialCount={likeCount || 0} />
+            <LikeButton postId={post.id} postAuthorId={post.user_id} initialLiked={Boolean(likeRow)} initialCount={likeCount || 0} />
             <span>{commentCount || 0} comments</span>
             <Link href={`/profile/${authorUsername}`} className="rounded-xl border border-border bg-panelSoft px-3 py-2 transition hover:text-text">View Profile</Link>
             {!isOwner ? <ReportPostButton postId={post.id} /> : null}
           </div>
         </article>
 
-        <CommentSection postId={post.id} comments={comments || []} postOwnerId={post.user_id} postTitle={post.title} />
+        <CommentSection postId={post.id} postAuthorId={post.user_id} comments={comments || []} />
       </div>
     </main>
   );
