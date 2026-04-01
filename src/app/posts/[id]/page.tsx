@@ -19,7 +19,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       .maybeSingle(),
     supabase
       .from("comments")
-      .select("id, content, created_at, profiles!comments_user_id_fkey(username, display_name)")
+      .select("id, user_id, content, created_at, profiles!comments_user_id_fkey(username, display_name)")
       .eq("post_id", id)
       .order("created_at", { ascending: true }),
     supabase.from("likes").select("id", { count: "exact", head: true }).eq("post_id", id),
@@ -28,6 +28,36 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   ]);
 
   if (!post) notFound();
+
+  const commentIds = (comments || []).map((comment) => comment.id);
+  const [{ data: commentLikeRows }, { data: commentLikedRows }] = commentIds.length
+    ? await Promise.all([
+        supabase.from("comment_likes").select("comment_id").in("comment_id", commentIds),
+        user
+          ? supabase
+              .from("comment_likes")
+              .select("comment_id")
+              .eq("user_id", user.id)
+              .in("comment_id", commentIds)
+          : Promise.resolve({ data: [] as { comment_id: string }[] }),
+      ])
+    : [
+        { data: [] as { comment_id: string }[] },
+        { data: [] as { comment_id: string }[] },
+      ];
+
+  const commentLikeCounts = new Map<string, number>();
+  for (const row of commentLikeRows || []) {
+    commentLikeCounts.set(row.comment_id, (commentLikeCounts.get(row.comment_id) || 0) + 1);
+  }
+
+  const likedCommentIds = new Set((commentLikedRows || []).map((row) => row.comment_id));
+
+  const hydratedComments = (comments || []).map((comment) => ({
+    ...comment,
+    like_count: commentLikeCounts.get(comment.id) || 0,
+    initial_liked: likedCommentIds.has(comment.id),
+  }));
 
   const author = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
   const category = Array.isArray(post.categories) ? post.categories[0] : post.categories;
@@ -72,7 +102,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
           </div>
         </article>
 
-        <CommentSection postId={post.id} postAuthorId={post.user_id} comments={comments || []} />
+        <CommentSection postId={post.id} postAuthorId={post.user_id} comments={hydratedComments} />
       </div>
     </main>
   );

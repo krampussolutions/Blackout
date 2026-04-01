@@ -5,11 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { createNotificationAndDeliver } from "@/lib/notifications/client";
+import CommentLikeButton from "@/components/CommentLikeButton";
 
 type CommentItem = {
   id: string;
+  user_id?: string | null;
   content: string;
   created_at?: string | null;
+  like_count?: number;
+  initial_liked?: boolean;
   profiles?: { username?: string | null; display_name?: string | null } | { username?: string | null; display_name?: string | null }[] | null;
 };
 
@@ -100,6 +104,16 @@ export default function CommentSection({ postId, postAuthorId, comments }: Comme
               </span>
             </div>
             <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted">{comment.content}</p>
+            <div className="mt-4">
+              <CommentLikeButton
+                commentId={comment.id}
+                postId={postId}
+                commentAuthorId={comment.user_id}
+                commentExcerpt={comment.content}
+                initialLiked={Boolean(comment.initial_liked)}
+                initialCount={comment.like_count || 0}
+              />
+            </div>
           </div>
         );
       }) : <div className="card text-sm text-muted">No comments yet.</div>}

@@ -11,6 +11,9 @@ export function getNotificationText(
   const actorName = actorLabel(actor);
   switch (notification.type) {
     case "like":
+      if (notification.metadata?.target === "comment") {
+        return `${actorName} liked your comment${notification.metadata?.comment_excerpt ? `: ${notification.metadata.comment_excerpt}` : "."}`;
+      }
       return `${actorName} liked your post${notification.metadata?.post_title ? `: ${notification.metadata.post_title}` : "."}`;
     case "comment":
       return `${actorName} commented on your post${notification.metadata?.post_title ? `: ${notification.metadata.post_title}` : "."}`;

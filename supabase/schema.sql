@@ -53,6 +53,14 @@ create table if not exists public.likes (
   unique(post_id, user_id)
 );
 
+create table if not exists public.comment_likes (
+  id uuid primary key default gen_random_uuid(),
+  comment_id uuid not null references public.comments(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(comment_id, user_id)
+);
+
 create table if not exists public.follows (
   id uuid primary key default gen_random_uuid(),
   follower_id uuid not null references public.profiles(id) on delete cascade,
@@ -112,6 +120,7 @@ alter table public.categories enable row level security;
 alter table public.posts enable row level security;
 alter table public.comments enable row level security;
 alter table public.likes enable row level security;
+alter table public.comment_likes enable row level security;
 alter table public.follows enable row level security;
 alter table public.post_reports enable row level security;
 
@@ -120,6 +129,7 @@ drop policy if exists "Categories are readable by everyone" on public.categories
 drop policy if exists "Posts are readable by everyone" on public.posts;
 drop policy if exists "Comments are readable by everyone" on public.comments;
 drop policy if exists "Likes are readable by everyone" on public.likes;
+drop policy if exists "Comment likes are readable by everyone" on public.comment_likes;
 drop policy if exists "Follows are readable by everyone" on public.follows;
 drop policy if exists "Users can update their own profile" on public.profiles;
 drop policy if exists "Users can insert their own profile" on public.profiles;
@@ -153,6 +163,7 @@ create policy "Categories are readable by everyone" on public.categories for sel
 create policy "Posts are readable by everyone" on public.posts for select using (true);
 create policy "Comments are readable by everyone" on public.comments for select using (true);
 create policy "Likes are readable by everyone" on public.likes for select using (true);
+create policy "Comment likes are readable by everyone" on public.comment_likes for select using (true);
 create policy "Follows are readable by everyone" on public.follows for select using (true);
 
 create policy "Users can update their own profile" on public.profiles for update using (auth.uid() = id);
@@ -168,8 +179,10 @@ create policy "Admins can delete any post" on public.posts for delete using (
 );
 create policy "Authenticated users can insert comments" on public.comments for insert with check (auth.uid() = user_id);
 create policy "Authenticated users can like posts" on public.likes for insert with check (auth.uid() = user_id);
+create policy "Authenticated users can like comments" on public.comment_likes for insert with check (auth.uid() = user_id);
 
 create policy "Users can unlike posts" on public.likes for delete using (auth.uid() = user_id);
+create policy "Users can unlike comments" on public.comment_likes for delete using (auth.uid() = user_id);
 create policy "Users can delete their own comments" on public.comments for delete using (auth.uid() = user_id);
 create policy "Users can update their own comments" on public.comments for update using (auth.uid() = user_id);
 create policy "Authenticated users can follow other users" on public.follows for insert with check (auth.uid() = follower_id);
