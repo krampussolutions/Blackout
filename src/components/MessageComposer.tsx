@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { createNotificationAndDeliver } from "@/lib/notifications/client";
 
 type MessageComposerProps = {
   recipientId: string;
@@ -63,6 +64,18 @@ export default function MessageComposer({
 
     setContent("");
     setLoading(false);
+
+    if (data && recipientId !== user.id) {
+      try {
+        await createNotificationAndDeliver({
+          userId: recipientId,
+          actorId: user.id,
+          type: "message",
+          messageId: data.id,
+          metadata: { excerpt: trimmed.slice(0, 120) },
+        });
+      } catch {}
+    }
 
     if (data) {
       onSent?.(data);

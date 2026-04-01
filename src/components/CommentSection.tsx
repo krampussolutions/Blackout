@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { createNotificationAndDeliver } from "@/lib/notifications/client";
 
 type CommentItem = {
   id: string;
@@ -51,13 +52,15 @@ export default function CommentSection({ postId, postAuthorId, comments }: Comme
     }
 
     if (postAuthorId && postAuthorId !== user.id) {
-      await supabase.from("notifications").insert({
-        user_id: postAuthorId,
-        actor_id: user.id,
-        type: "comment",
-        post_id: postId,
-        metadata: { excerpt: trimmed.slice(0, 120) },
-      });
+      try {
+        await createNotificationAndDeliver({
+          userId: postAuthorId,
+          actorId: user.id,
+          type: "comment",
+          postId,
+          metadata: { excerpt: trimmed.slice(0, 120) },
+        });
+      } catch {}
     }
 
     setContent("");

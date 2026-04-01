@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { createNotificationAndDeliver } from "@/lib/notifications/client";
 
 type FollowButtonProps = {
   targetUserId?: string | null;
@@ -60,11 +61,13 @@ export default function FollowButton({
       });
 
       if (!error) {
-        await supabase.from("notifications").insert({
-          user_id: targetUserId,
-          actor_id: user.id,
-          type: "follow",
-        });
+        try {
+          await createNotificationAndDeliver({
+            userId: targetUserId,
+            actorId: user.id,
+            type: "follow",
+          });
+        } catch {}
         setIsFollowing(true);
         router.refresh();
       }
