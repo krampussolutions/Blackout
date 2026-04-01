@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
 
 type Props = {
   userId: string;
@@ -10,47 +9,35 @@ type Props = {
 };
 
 export default function NavRealtimeBadges({ userId, kind, initialCount }: Props) {
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [count, setCount] = useState(initialCount);
 
   useEffect(() => {
     let active = true;
 
     async function refreshCount() {
-      const query =
-        kind === "messages"
-          ? supabase.from("direct_messages").select("id", { head: true, count: "exact" }).eq("recipient_id", userId).is("read_at", null)
-          : supabase.from("notifications").select("id", { head: true, count: "exact" }).eq("user_id", userId).is("read_at", null);
-
-      const { count: nextCount } = await query;
+      const endpoint = kind === "messages" ? "/api/messages/unread-count" : "/api/alerts/count";
+      const response = await fetch(endpoint, { credentials: "include", cache: "no-store" }).catch(() => null);
+      if (!active || !response?.ok) return;
+      const payload = await response.json().catch(() => null);
       if (!active) return;
-      setCount(nextCount ?? 0);
+      setCount(Number(payload?.count || 0));
     }
 
     refreshCount();
 
-    const channel = supabase
-      .channel(`nav-badge-${kind}-${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: kind === "messages" ? "direct_messages" : "notifications",
-          filter: kind === "messages" ? `recipient_id=eq.${userId}` : `user_id=eq.${userId}`,
-        },
-        refreshCount,
-      )
-      .subscribe();
+    const onAlertsChanged = () => {
+      if (kind === "notifications") refreshCount();
+    };
 
-    const timer = window.setInterval(refreshCount, kind === "messages" ? 3000 : 5000);
+    window.addEventListener("alerts:changed", onAlertsChanged);
+    const timer = window.setInterval(refreshCount, kind === "messages" ? 3000 : 4000);
 
     return () => {
       active = false;
+      window.removeEventListener("alerts:changed", onAlertsChanged);
       window.clearInterval(timer);
-      supabase.removeChannel(channel);
     };
-  }, [kind, supabase, userId]);
+  }, [kind, userId]);
 
   if (count <= 0) return null;
 

@@ -17,7 +17,7 @@ function defaultPreferences(userId: string): NotificationPreferences {
     email_message: true,
     email_invite_accepted: true,
     email_system: true,
-    push_enabled: true,
+    push_enabled: false,
     push_like: true,
     push_comment: true,
     push_follow: true,
@@ -42,7 +42,7 @@ export default async function NotificationSettingsPage() {
     supabase.from("notification_preferences").select("*").eq("user_id", user.id).maybeSingle<NotificationPreferences>(),
     supabase
       .from("notifications")
-      .select("id, user_id, actor_id, type, post_id, comment_id, group_id, message_id, metadata, read_at, created_at, profiles!notifications_actor_id_fkey(username, display_name)")
+      .select("id, user_id, actor_id, type, post_id, comment_id, group_id, message_id, metadata, read_at, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(100),

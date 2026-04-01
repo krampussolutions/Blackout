@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { emitAlertsRead } from "@/lib/notifications/client";
 
 export default function MarkNotificationsReadButton() {
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -13,19 +12,22 @@ export default function MarkNotificationsReadButton() {
     if (loading) return;
     setLoading(true);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const response = await fetch("/api/alerts/read-all", {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+    }).catch(() => null);
+
+    setLoading(false);
+
+    if (!response) return;
+    if (response.status === 401) {
       router.push("/login?redirect_to=/settings/notifications");
       return;
     }
+    if (!response.ok) return;
 
-    await supabase
-      .from("notifications")
-      .update({ read_at: new Date().toISOString() })
-      .eq("user_id", user.id)
-      .is("read_at", null);
-
-    setLoading(false);
+    emitAlertsRead();
     router.refresh();
   }
 

@@ -1,7 +1,12 @@
 "use client";
 
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { NotificationMetadata, NotificationType } from "@/lib/notifications/types";
+
+function emitAlertsChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("alerts:changed"));
+  }
+}
 
 export async function createNotificationAndDeliver(input: {
   userId: string;
@@ -13,42 +18,25 @@ export async function createNotificationAndDeliver(input: {
   messageId?: string | null;
   metadata?: NotificationMetadata;
 }) {
-  const supabase = createSupabaseBrowserClient();
+  const response = await fetch("/api/alerts/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    cache: "no-store",
+    body: JSON.stringify(input),
+  });
 
-  const { data: notification, error } = await supabase
-    .from("notifications")
-    .insert({
-      user_id: input.userId,
-      actor_id: input.actorId,
-      type: input.type,
-      post_id: input.postId ?? null,
-      comment_id: input.commentId ?? null,
-      group_id: input.groupId ?? null,
-      message_id: input.messageId ?? null,
-      metadata: input.metadata ?? {},
-    })
-    .select("id")
-    .single();
+  const payload = await response.json().catch(() => null);
 
-  if (error) throw error;
-
-  try {
-    const response = await fetch("/api/notifications/deliver", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      cache: "no-store",
-      keepalive: true,
-      body: JSON.stringify({ notificationId: notification.id }),
-    });
-
-    if (!response.ok) {
-      const details = await response.text().catch(() => "");
-      console.error("Notification delivery failed", response.status, details);
-    }
-  } catch (fetchError) {
-    console.error("Notification delivery request failed", fetchError);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Failed to create alert");
   }
 
-  return notification;
+  emitAlertsChanged();
+
+  return payload?.notification ?? null;
+}
+
+export function emitAlertsRead() {
+  emitAlertsChanged();
 }
