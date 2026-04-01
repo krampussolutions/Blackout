@@ -33,13 +33,21 @@ export async function createNotificationAndDeliver(input: {
   if (error) throw error;
 
   try {
-    await fetch("/api/notifications/deliver", {
+    const response = await fetch("/api/notifications/deliver", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      cache: "no-store",
+      keepalive: true,
       body: JSON.stringify({ notificationId: notification.id }),
     });
-  } catch {
-    // Delivery failures should not block the in-app notification itself.
+
+    if (!response.ok) {
+      const payload = await response.text().catch(() => "");
+      console.error("Notification delivery failed", response.status, payload);
+    }
+  } catch (deliveryError) {
+    console.error("Notification delivery request failed", deliveryError);
   }
 
   return notification;

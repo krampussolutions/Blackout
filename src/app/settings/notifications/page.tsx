@@ -6,6 +6,7 @@ import NotificationPreferencesForm from "@/components/NotificationPreferencesFor
 import RealtimeNotificationsList from "@/components/RealtimeNotificationsList";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { NotificationPreferences, NotificationRecord } from "@/lib/notifications/types";
+import { isWebPushConfigured } from "@/lib/notifications/web-push";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,8 @@ export default async function NotificationSettingsPage() {
   ]);
 
   const preferences = preferencesResponse.data || defaultPreferences(user.id);
+  const emailConfigured = Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
+  const pushConfigured = isWebPushConfigured();
 
   if (!preferencesResponse.data) {
     await supabase.from("notification_preferences").upsert(preferences, { onConflict: "user_id" });
@@ -112,6 +115,23 @@ export default async function NotificationSettingsPage() {
             <MarkNotificationsReadButton />
           </div>
           <RealtimeNotificationsList userId={user.id} initialNotifications={initialNotifications} />
+        </div>
+
+        <div className="card space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold text-text">Delivery status</h2>
+            <p className="mt-2 text-sm text-muted">These server-side checks tell you whether email and push are configured to send from this deployment.</p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className={`rounded-2xl border px-4 py-3 text-sm ${emailConfigured ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" : "border-amber-500/30 bg-amber-500/10 text-amber-100"}`}>
+              <div className="font-semibold">Email delivery</div>
+              <div className="mt-1 text-xs">{emailConfigured ? "Resend API key and from address are configured." : "Missing RESEND_API_KEY or RESEND_FROM_EMAIL in this deployment."}</div>
+            </div>
+            <div className={`rounded-2xl border px-4 py-3 text-sm ${pushConfigured ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200" : "border-amber-500/30 bg-amber-500/10 text-amber-100"}`}>
+              <div className="font-semibold">Browser push delivery</div>
+              <div className="mt-1 text-xs">{pushConfigured ? "VAPID keys are configured on the server." : "Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY in this deployment."}</div>
+            </div>
+          </div>
         </div>
 
         <div className="card space-y-4">

@@ -1,49 +1,51 @@
 self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
-    let payload = {
+    let data = {
       title: 'Blackout Network',
-      body: 'You have new activity waiting.',
-      href: '/notifications',
+      body: 'You have a new alert.',
+      href: '/settings/notifications',
     };
 
     try {
       const response = await fetch('/api/notifications/latest-unread', { credentials: 'include' });
       if (response.ok) {
-        const data = await response.json();
-        if (data?.notification) {
-          payload = data.notification;
+        const payload = await response.json();
+        if (payload?.notification) {
+          data = {
+            title: 'Blackout Network',
+            body: payload.notification.text || data.body,
+            href: payload.notification.href || data.href,
+          };
         }
       }
-    } catch {
-      // Fall back to a generic alert if the latest notification cannot be fetched.
-    }
+    } catch {}
 
-    await self.registration.showNotification(payload.title, {
-      body: payload.body,
-      data: { href: payload.href },
-      badge: '/og-image.png',
-      icon: '/og-image.png',
-      tag: 'blackout-network-notification',
-      renotify: true,
+    await self.registration.showNotification(data.title, {
+      body: data.body,
+      data: { href: data.href },
+      badge: '/icons/icon-192.png',
+      icon: '/icons/icon-192.png',
     });
   })());
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const href = event.notification.data?.href || '/notifications';
+  const href = event.notification.data?.href || '/settings/notifications';
 
   event.waitUntil((async () => {
     const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+
     for (const client of windowClients) {
       if ('focus' in client) {
-        client.navigate(href);
-        return client.focus();
+        client.focus();
+        if ('navigate' in client) {
+          client.navigate(href);
+        }
+        return;
       }
     }
 
-    if (clients.openWindow) {
-      return clients.openWindow(href);
-    }
+    await clients.openWindow(href);
   })());
 });

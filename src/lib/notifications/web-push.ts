@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto, { KeyObject } from "crypto";
 
 type PushSubscriptionRow = {
   endpoint: string;
@@ -28,12 +28,12 @@ function getVapidPublicKeyBase64() {
   return process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY || "";
 }
 
-function getVapidPrivateKeyPem() {
+function getVapidPrivateKeyRaw() {
   return process.env.VAPID_PRIVATE_KEY || "";
 }
 
 export function isWebPushConfigured() {
-  return Boolean(getVapidPublicKeyBase64() && getVapidPrivateKeyPem());
+  return Boolean(getVapidPublicKeyBase64() && getVapidPrivateKeyRaw());
 }
 
 export function urlBase64ToUint8Array(base64String: string) {
@@ -41,12 +41,44 @@ export function urlBase64ToUint8Array(base64String: string) {
   return new Uint8Array(buffer);
 }
 
+function createPrivateKey(): KeyObject {
+  const privateKey = getVapidPrivateKeyRaw().trim();
+
+  if (!privateKey) {
+    throw new Error("Missing VAPID private key.");
+  }
+
+  if (privateKey.includes("BEGIN PRIVATE KEY")) {
+    return crypto.createPrivateKey(privateKey);
+  }
+
+  const publicKey = base64UrlDecodeToBuffer(getVapidPublicKeyBase64());
+  const privateKeyBytes = base64UrlDecodeToBuffer(privateKey);
+
+  if (publicKey.length !== 65 || publicKey[0] !== 0x04 || privateKeyBytes.length !== 32) {
+    throw new Error("Invalid VAPID key format.");
+  }
+
+  const x = publicKey.subarray(1, 33);
+  const y = publicKey.subarray(33, 65);
+
+  return crypto.createPrivateKey({
+    key: {
+      kty: "EC",
+      crv: "P-256",
+      x: base64UrlEncode(x),
+      y: base64UrlEncode(y),
+      d: base64UrlEncode(privateKeyBytes),
+    },
+    format: "jwk",
+  });
+}
+
 function createJwt(endpoint: string) {
-  const privateKey = getVapidPrivateKeyPem();
   const publicKey = getVapidPublicKeyBase64();
 
-  if (!privateKey || !publicKey) {
-    throw new Error("Missing VAPID keys.");
+  if (!publicKey) {
+    throw new Error("Missing VAPID public key.");
   }
 
   const header = {
@@ -65,7 +97,7 @@ function createJwt(endpoint: string) {
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const unsigned = `${encodedHeader}.${encodedPayload}`;
   const signature = crypto.sign("sha256", Buffer.from(unsigned), {
-    key: privateKey,
+    key: createPrivateKey(),
     dsaEncoding: "ieee-p1363",
   });
 
@@ -83,6 +115,7 @@ export async function sendWebPush(subscription: PushSubscriptionRow) {
       TTL: "60",
       Authorization: `vapid t=${jwt}, k=${publicKey}`,
       Urgency: "normal",
+      "Content-Length": "0",
     },
   });
 

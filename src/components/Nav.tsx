@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/LogoutButton";
+import NavRealtimeBadges from "@/components/NavRealtimeBadges";
 
 const publicLinks = [
   { href: "/", label: "Home" },
@@ -19,7 +20,9 @@ const memberLinks = [
 
 export default async function Nav() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   let profileUsername: string | null = null;
   let membershipTier = "free";
@@ -57,15 +60,21 @@ export default async function Nav() {
               <Link key={link.href} href={link.href} className="rounded-xl px-3 py-2 text-sm text-muted transition hover:bg-panelSoft hover:text-text">
                 <span className="inline-flex items-center gap-2">
                   {link.label}
-                  {isMessages && unreadCount > 0 ? (
-                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </span>
+                  {user && isMessages ? (
+                    <NavRealtimeBadges
+                      userId={user.id}
+                      initialMessageCount={unreadCount}
+                      initialNotificationCount={unreadNotificationCount}
+                      show="messages"
+                    />
                   ) : null}
-                  {isAlerts && unreadNotificationCount > 0 ? (
-                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-black">
-                      {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
-                    </span>
+                  {user && isAlerts ? (
+                    <NavRealtimeBadges
+                      userId={user.id}
+                      initialMessageCount={unreadCount}
+                      initialNotificationCount={unreadNotificationCount}
+                      show="notifications"
+                    />
                   ) : null}
                 </span>
               </Link>
