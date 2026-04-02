@@ -1,1 +1,3 @@
 export const FOUNDER_BADGE_INVITE_TARGET = 10;
+
+export const INVITE_ANNOUNCEMENT_VERSION = 1;

@@ -15,6 +15,7 @@ create table if not exists public.profiles (
 
 alter table public.profiles add column if not exists cover_url text;
 alter table public.profiles add column if not exists interests text[] default '{}'::text[];
+alter table public.profiles add column if not exists invite_announcement_seen_version integer not null default 0;
 
 create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),

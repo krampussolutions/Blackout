@@ -5,6 +5,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
 import BrowserNotificationListener from "@/components/BrowserNotificationListener";
+import InviteAnnouncementGate from "@/components/InviteAnnouncementGate";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -47,6 +48,7 @@ export default function RootLayout({
         <ServiceWorkerRegistrar />
         <BrowserNotificationListener />
         <Nav />
+        <InviteAnnouncementGate />
         {children}
         <Footer />
       </body>
