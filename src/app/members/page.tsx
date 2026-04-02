@@ -12,6 +12,7 @@ function toMemberProfile(member: {
   cover_url: string | null;
   interests: string[] | null;
   created_at: string | null;
+  founder_badge_earned?: boolean | null;
   followers: number;
   following: number;
   posts: number;
@@ -35,6 +36,7 @@ function toMemberProfile(member: {
     joinedLabel: member.created_at ? `Joined ${new Date(member.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}` : "Joined recently",
     isFollowing: member.isFollowing,
     isCurrentUser: member.isCurrentUser,
+    founderBadgeEarned: member.founder_badge_earned || false,
   };
 }
 
@@ -43,7 +45,7 @@ export default async function MembersPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   const [{ data: profiles }, { data: follows }] = await Promise.all([
-    supabase.from("profiles").select("id, username, display_name, bio, location, avatar_url, cover_url, interests, created_at").order("created_at", { ascending: false }).limit(30),
+    supabase.from("profiles").select("id, username, display_name, bio, location, avatar_url, cover_url, interests, founder_badge_earned, created_at").order("created_at", { ascending: false }).limit(30),
     user ? supabase.from("follows").select("following_id").eq("follower_id", user.id) : Promise.resolve({ data: [] as { following_id: string }[] }),
   ]);
 

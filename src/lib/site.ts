@@ -23,6 +23,7 @@ export type MemberProfile = {
   isFollowing?: boolean;
   isCurrentUser?: boolean;
   membershipTier?: string;
+  founderBadgeEarned?: boolean;
 };
 
 export const categories = [

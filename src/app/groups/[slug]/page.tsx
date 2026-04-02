@@ -16,6 +16,7 @@ function formatMember(member: {
   cover_url?: string | null;
   interests?: string[] | null;
   created_at?: string | null;
+  founder_badge_earned?: boolean | null;
   isFollowing?: boolean;
   isCurrentUser?: boolean;
 }): MemberProfile {
@@ -36,6 +37,7 @@ function formatMember(member: {
     joinedLabel: member.created_at ? `Joined ${new Date(member.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}` : "Joined recently",
     isFollowing: member.isFollowing || false,
     isCurrentUser: member.isCurrentUser || false,
+    founderBadgeEarned: member.founder_badge_earned || false,
   };
 }
 
@@ -59,7 +61,7 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ sl
     user ? supabase.from("group_members").select("id").eq("group_id", group.id).eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
     supabase
       .from("group_members")
-      .select("profiles!group_members_user_id_fkey(id, username, display_name, bio, location, avatar_url, cover_url, interests, created_at)")
+      .select("profiles!group_members_user_id_fkey(id, username, display_name, bio, location, avatar_url, cover_url, interests, founder_badge_earned, created_at)")
       .eq("group_id", group.id)
       .limit(6),
     user ? supabase.from("follows").select("following_id").eq("follower_id", user.id) : Promise.resolve({ data: [] as { following_id: string }[] }),

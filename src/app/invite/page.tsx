@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import InviteLinkCard from "@/components/InviteLinkCard";
+import { FOUNDER_BADGE_INVITE_TARGET } from "@/lib/referrals";
 
 export default async function InvitePage() {
   const supabase = await createSupabaseServerClient();
@@ -11,10 +12,13 @@ export default async function InvitePage() {
 
   const [{ count: inviteCount }, { data: profile }] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("invited_by", user.id),
-    supabase.from("profiles").select("username, display_name").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("username, display_name, founder_badge_earned").eq("id", user.id).maybeSingle(),
   ]);
 
   const shareText = `${profile?.display_name || profile?.username || "A member"} invited you to Blackout Network — a place for blackout prep, off-grid living, food storage, water, comms, and practical readiness.`;
+
+  const successfulInvites = inviteCount ?? 0;
+  const invitesRemaining = Math.max(FOUNDER_BADGE_INVITE_TARGET - successfulInvites, 0);
 
   return (
     <main className="container-shell py-10">
@@ -23,7 +27,16 @@ export default async function InvitePage() {
           <p className="text-xs uppercase tracking-[0.18em] text-muted">Grow your circle</p>
           <h1 className="mt-3 text-3xl font-bold text-text">Invite people into Blackout Network</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">Use your invite link to bring in friends, family, local preparedness contacts, or group members. New signups created through your invite are tracked on your profile connection.</p>
-          <div className="mt-5 inline-flex rounded-full border border-border bg-panelSoft px-4 py-2 text-sm text-text">Successful invites: {inviteCount ?? 0}</div>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <div className="inline-flex rounded-full border border-border bg-panelSoft px-4 py-2 text-sm text-text">Successful invites: {successfulInvites}</div>
+            {profile?.founder_badge_earned ? (
+              <div className="inline-flex rounded-full border border-brand/40 bg-brand/15 px-4 py-2 text-sm font-semibold text-brand">Founder badge unlocked</div>
+            ) : (
+              <div className="inline-flex rounded-full border border-border bg-panelSoft px-4 py-2 text-sm text-muted">
+                Invite {invitesRemaining} more {invitesRemaining === 1 ? "person" : "people"} to unlock the Founder badge
+              </div>
+            )}
+          </div>
         </div>
 
         <InviteLinkCard />

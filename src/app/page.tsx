@@ -21,6 +21,7 @@ function formatMember(member: {
   cover_url?: string | null;
   interests?: string[] | null;
   created_at?: string | null;
+  founder_badge_earned?: boolean | null;
   followers?: number;
   following?: number;
   posts?: number;
@@ -49,6 +50,7 @@ function formatMember(member: {
       : "Joined recently",
     isFollowing: member.isFollowing || false,
     isCurrentUser: member.isCurrentUser || false,
+    founderBadgeEarned: member.founder_badge_earned || false,
   };
 }
 
@@ -67,7 +69,7 @@ export default async function HomePage() {
       supabase
         .from("profiles")
         .select(
-          "id, username, display_name, bio, location, avatar_url, cover_url, interests, created_at"
+          "id, username, display_name, bio, location, avatar_url, cover_url, interests, founder_badge_earned, created_at"
         )
         .order("created_at", { ascending: false })
         .limit(4),

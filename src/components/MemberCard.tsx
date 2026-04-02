@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { MemberProfile } from "@/lib/site";
 import FollowButton from "@/components/FollowButton";
+import ProfileBadges from "@/components/ProfileBadges";
 
 type MemberCardProps = {
   member: MemberProfile;
@@ -24,6 +25,11 @@ export default function MemberCard({ member, compact = false }: MemberCardProps)
             {member.displayName}
           </Link>
           <p className="text-sm text-muted">@{member.username}</p>
+          <ProfileBadges
+            membershipTier={member.membershipTier}
+            founderBadgeEarned={member.founderBadgeEarned}
+            compact
+          />
           <p className="mt-2 text-sm leading-6 text-muted">{member.bio}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {member.interests.map((interest) => (

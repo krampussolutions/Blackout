@@ -18,7 +18,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const { data: dbProfile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, username, display_name, bio, location, avatar_url, cover_url, interests, membership_tier, created_at")
+    .select("id, username, display_name, bio, location, avatar_url, cover_url, interests, membership_tier, founder_badge_earned, created_at")
     .ilike("username", username)
     .maybeSingle();
 
@@ -67,6 +67,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         isFollowing,
         isCurrentUser: user?.id === dbProfile.id,
         membershipTier: dbProfile.membership_tier,
+        founderBadgeEarned: dbProfile.founder_badge_earned || false,
       }
     : null;
 

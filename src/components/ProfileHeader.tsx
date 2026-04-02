@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { MemberProfile } from "@/lib/site";
 import FollowButton from "@/components/FollowButton";
+import ProfileBadges from "@/components/ProfileBadges";
 
 type ProfileHeaderProps = {
   profile: MemberProfile;
@@ -28,11 +29,10 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
             <div className="pb-1">
               <h1 className="text-3xl font-bold text-text">{profile.displayName}</h1>
               <p className="mt-1 text-sm text-muted">@{profile.username} • {profile.location}</p>
-              {profile.membershipTier === "admin" ? (
-                <span className="mt-2 inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-200">
-                  Admin
-                </span>
-              ) : null}
+              <ProfileBadges
+                membershipTier={profile.membershipTier}
+                founderBadgeEarned={profile.founderBadgeEarned}
+              />
             </div>
           </div>
           <div className="flex flex-wrap gap-3">

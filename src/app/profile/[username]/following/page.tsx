@@ -20,6 +20,7 @@ function mapProfile(member: any, currentUserId?: string): MemberProfile {
     following: 0,
     posts: 0,
     joinedLabel: member.created_at ? `Joined ${new Date(member.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}` : "Joined recently",
+    founderBadgeEarned: member.founder_badge_earned || false,
     isFollowing: false,
     isCurrentUser: currentUserId === member.id,
   };
@@ -36,7 +37,7 @@ export default async function FollowingPage({ params }: { params: Promise<{ user
   const [{ data: rows }, { data: myFollows }] = await Promise.all([
     supabase
       .from("follows")
-      .select("profiles!follows_following_id_fkey(id, username, display_name, bio, location, avatar_url, cover_url, interests, created_at)")
+      .select("profiles!follows_following_id_fkey(id, username, display_name, bio, location, avatar_url, cover_url, interests, founder_badge_earned, created_at)")
       .eq("follower_id", profile.id),
     user ? supabase.from("follows").select("following_id").eq("follower_id", user.id) : Promise.resolve({ data: [] as { following_id: string }[] }),
   ]);
