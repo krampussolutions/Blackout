@@ -19,7 +19,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       .maybeSingle(),
     supabase
       .from("comments")
-      .select("id, user_id, content, created_at, profiles!comments_user_id_fkey(username, display_name)")
+      .select("id, user_id, parent_id, content, created_at, profiles!comments_user_id_fkey(username, display_name)")
       .eq("post_id", id)
       .order("created_at", { ascending: true }),
     supabase.from("likes").select("id", { count: "exact", head: true }).eq("post_id", id),
