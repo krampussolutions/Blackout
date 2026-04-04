@@ -92,7 +92,7 @@ export function computeForYouScore(post: { comments: number; likes: number; crea
 export function dedupeTopicItems<T extends { label: string; href: string }>(items: T[]) {
   const seen = new Set<string>();
   return items.filter((item) => {
-    const key = `${buildTopicValue(item.label)}::${item.href}`;
+    const key = buildTopicValue(item.label);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

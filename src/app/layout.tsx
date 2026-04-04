@@ -35,6 +35,9 @@ export const metadata: Metadata = {
   },
 };
 
+const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "ca-pub-5957528671321920";
+const adsenseScriptSrc = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -45,6 +48,12 @@ export default function RootLayout({
         <Script id="google-analytics" strategy="afterInteractive">
           {`window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-FTZY69G833');`}
         </Script>
+        <Script
+          async
+          crossOrigin="anonymous"
+          src={adsenseScriptSrc}
+          strategy="afterInteractive"
+        />
         <ServiceWorkerRegistrar />
         <BrowserNotificationListener />
         <Nav />

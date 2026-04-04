@@ -10,29 +10,94 @@ export const guides: GuideEntry[] = [
   {
     slug: "72-hour-kit-checklist",
     title: "72-Hour Kit Checklist for Blackouts and Emergencies",
-    description: "Build a practical 72-hour kit with water, lighting, food, power, and medical basics.",
+    description: "Build a practical 72-hour kit with water, food, power, medical gear, documents, and season-specific supplies.",
     intro:
-      "A 72-hour kit gives you a fast, dependable starting point for outages, storms, evacuations, and household disruptions. Keep it simple, practical, and easy to grab.",
+      "A 72-hour kit is your short-term cushion when normal routines break down. It helps you get through blackouts, storms, road closures, evacuations, and household emergencies without immediately scrambling for basics. The goal is not to build the perfect bag overnight. The goal is to cover the first three days with dependable essentials that are easy to carry, easy to find, and easy to maintain.",
     sections: [
       {
-        heading: "Water first",
+        heading: "Start with your household, not somebody else’s list",
         body: [
-          "Plan around one gallon of water per person per day for drinking and basic sanitation.",
-          "Store more than the minimum if you have children, pets, or medical needs.",
+          "Before you buy gear, think through who the kit is actually for. A solo commuter kit looks different from a family kit kept at home, and both look different from a go-bag for evacuation.",
+          "Count the people, pets, medications, and climate needs you actually have. A child in diapers, a diabetic adult, or a dog on daily medication changes the checklist fast.",
+          "If possible, build one main household kit and then smaller grab-and-go kits for each vehicle or family member. That keeps the essentials centralized without leaving you exposed if you have to leave quickly.",
         ],
       },
       {
-        heading: "Light and power",
+        heading: "Water is the first priority",
         body: [
-          "Pack headlamps, flashlights, spare batteries, and at least one rechargeable power bank.",
-          "A small lantern is usually better than relying on one flashlight for everything.",
+          "Plan around one gallon of water per person per day for drinking and basic sanitation. For a full 72 hours, that means at least three gallons per person before you add extra for heat, illness, pets, or limited sanitation options.",
+          "Stored water is better than relying only on filtration. Filters are important, but in the first hours of an outage or evacuation, ready-to-drink water is faster and more dependable.",
+          "Use sturdy bottles or containers you can rotate on a schedule. If you have room, keep extra water separate from the bag so you can top off your short-term kit without overloading it.",
+          "A small backup filter, purification tablets, or the ability to boil water gives you a second layer if the disruption lasts longer than expected.",
         ],
       },
       {
-        heading: "Food and medical basics",
+        heading: "Pack food that needs almost nothing from you",
         body: [
-          "Keep shelf-stable meals, snacks, a manual can opener, prescriptions, first aid supplies, and hygiene items together.",
-          "Rotate food and medications on a schedule so your kit stays ready.",
+          "A 72-hour kit is not the place for complicated meals. Choose shelf-stable foods that can be eaten cold, require little prep, and hold up well during travel or power loss.",
+          "Good starter options include protein bars, peanut butter, crackers, canned meat, tuna, soup, trail mix, instant oatmeal, electrolyte packets, dried fruit, and ready-to-eat meals that only need hot water if available.",
+          "Keep a manual can opener in the kit if any food depends on it. Do not assume you will remember where the kitchen opener is when the lights are out or you need to leave quickly.",
+          "Focus on calories, protein, and convenience first. Comfort foods matter too, especially for children, but the bag should solve hunger before it solves morale.",
+        ],
+      },
+      {
+        heading: "Lighting and backup power make everything easier",
+        body: [
+          "A headlamp is usually one of the highest-value items in the whole kit because it keeps both hands free. Pair it with a small flashlight and at least one backup battery set or charging cable.",
+          "A compact lantern helps a room feel calmer than a flashlight beam bouncing around the walls. That matters more than people think during long evenings without power.",
+          "Add at least one charged power bank and the cords your household actually uses. Label or bundle the cables so you are not sorting through random chargers when phones are low.",
+          "If you rely on rechargeable gear, keep a backup option that does not depend on wall power being restored quickly. A dead power bank is just extra weight.",
+        ],
+      },
+      {
+        heading: "Cover first aid, hygiene, and daily meds",
+        body: [
+          "Your kit should handle common injuries, minor illness, and personal care without needing a drugstore run. Stock bandages, gauze, tape, antiseptic wipes, gloves, pain relievers, antihistamines, tweezers, and any personal prescriptions you can legally and safely rotate.",
+          "Do not forget hygiene basics. Toothbrushes, toothpaste, wipes, soap, toilet paper, feminine products, diapers, and trash bags are easy to overlook and miserable to do without.",
+          "If someone in the home needs glasses, hearing aid batteries, inhalers, insulin supplies, mobility aids, or backup medical paperwork, those items belong on the checklist before you add more gear gadgets.",
+          "Check expiration dates and refill cycles regularly. Medical readiness fails quietly when people assume a kit packed a year ago is still ready today.",
+        ],
+      },
+      {
+        heading: "Documents, cash, and communication backups matter",
+        body: [
+          "Keep a small waterproof pouch with copies of identification, insurance information, emergency contacts, local maps, and any key medical information you would need if your phone died or service went down.",
+          "A little cash in small bills is worth carrying. Card readers, ATMs, and gas pumps do not always work smoothly during outages or evacuations.",
+          "Write down at least one out-of-area contact and one local meeting point. People often assume they will remember numbers and plans under stress, but that confidence disappears fast when batteries are low and routines are broken.",
+          "A battery radio or crank radio can also belong in the kit if severe weather, wildfire, or infrastructure outages are common in your area.",
+        ],
+      },
+      {
+        heading: "Clothing, shelter, and season-specific supplies",
+        body: [
+          "Add a weather layer for each person, even if the bag stays in the house. A hoodie, socks, gloves, poncho, emergency blanket, or rain shell can solve a lot of discomfort fast.",
+          "Your local climate should shape the kit. Cold-weather kits need insulation, hand warmers, hats, and ways to stay dry. Hot-weather kits need extra water, electrolyte support, sun protection, and cooling considerations.",
+          "If evacuation is a possibility, include sturdy shoes or at least keep them staged next to the kit. Walking out in slides or barefoot because the kit was packed but the footwear was forgotten is a common oversight.",
+          "For vehicle kits, assume you may be stranded for hours before help arrives. That makes blankets, visibility gear, and weather protection more important than they look on paper.",
+        ],
+      },
+      {
+        heading: "Do not forget kids, pets, and comfort items",
+        body: [
+          "Children burn through patience and supplies faster than adults during disruption. Pack diapers, wipes, formula, snacks, comfort items, small activities, and any age-specific medicines they may need.",
+          "Pets need food, water, leash or carrier gear, waste bags, and medication too. A household kit that ignores the animals is incomplete.",
+          "A few morale items can make a rough situation more manageable. Think deck of cards, not entertainment center. Simple comfort goes a long way when power is out and routines are disrupted.",
+        ],
+      },
+      {
+        heading: "Store it well and review it on a schedule",
+        body: [
+          "A great checklist does not help if the bag is buried behind holiday decorations or packed so heavily nobody wants to move it. Use durable containers, label them clearly, and keep them where you can reach them fast.",
+          "Review the kit at least twice a year. Rotate food, water, batteries, clothing sizes, medications, and seasonal gear. Tie the review to daylight saving time, storm season, or another date you already remember.",
+          "Preparedness works best when the kit is simple enough to maintain. A realistic kit that gets checked is far better than an elaborate setup that is forgotten.",
+        ],
+      },
+      {
+        heading: "Simple 72-hour kit starter checklist",
+        body: [
+          "For each person: water, easy food, one light source, weather layer, medications, hygiene basics, phone charging cable, and copies of important contacts.",
+          "For the household: first aid kit, can opener, power bank, radio, trash bags, cash, lighter or matches where appropriate, and a written plan for communication and meeting up.",
+          "For special needs: pet supplies, diapers, mobility or medical equipment, and climate-specific gear. The most important checklist is the one that matches your real life.",
         ],
       },
     ],
