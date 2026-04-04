@@ -1,9 +1,16 @@
+export type GuideImage = {
+  src: string;
+  alt: string;
+  caption?: string;
+};
+
 export type GuideEntry = {
   slug: string;
   title: string;
   description: string;
   intro: string;
-  sections: Array<{ heading: string; body: string[] }>;
+  coverImage?: GuideImage;
+  sections: Array<{ heading: string; body: string[]; image?: GuideImage }>;
 };
 
 export const guides: GuideEntry[] = [
@@ -13,6 +20,11 @@ export const guides: GuideEntry[] = [
     description: "Build a practical 72-hour kit with water, food, power, medical gear, documents, and season-specific supplies.",
     intro:
       "A 72-hour kit is your short-term cushion when normal routines break down. It helps you get through blackouts, storms, road closures, evacuations, and household emergencies without immediately scrambling for basics. The goal is not to build the perfect bag overnight. The goal is to cover the first three days with dependable essentials that are easy to carry, easy to find, and easy to maintain.",
+    coverImage: {
+      src: "/guides/72-hour-kit/hero-kit.svg",
+      alt: "Illustration of a staged 72-hour emergency kit with water, food, lighting, first-aid, and documents.",
+      caption: "A good 72-hour kit covers the basics first: water, food, light, first aid, documents, clothing, and practical extras.",
+    },
     sections: [
       {
         heading: "Start with your household, not somebody else’s list",
@@ -24,6 +36,11 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Water is the first priority",
+        image: {
+          src: "/guides/72-hour-kit/water-food.svg",
+          alt: "Illustration showing water containers, canned food, and compact ready-to-eat supplies for a 72-hour kit.",
+          caption: "Stored water and low-prep food should be the first things staged, not the last things improvised.",
+        },
         body: [
           "Plan around one gallon of water per person per day for drinking and basic sanitation. For a full 72 hours, that means at least three gallons per person before you add extra for heat, illness, pets, or limited sanitation options.",
           "Stored water is better than relying only on filtration. Filters are important, but in the first hours of an outage or evacuation, ready-to-drink water is faster and more dependable.",
@@ -42,6 +59,11 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Lighting and backup power make everything easier",
+        image: {
+          src: "/guides/72-hour-kit/light-medical.svg",
+          alt: "Illustration of a lantern, flashlight, power bank, and first-aid pouch laid out for emergency use.",
+          caption: "Hands-free light, charging options, and basic medical gear reduce stress fast during outages and evacuations.",
+        },
         body: [
           "A headlamp is usually one of the highest-value items in the whole kit because it keeps both hands free. Pair it with a small flashlight and at least one backup battery set or charging cable.",
           "A compact lantern helps a room feel calmer than a flashlight beam bouncing around the walls. That matters more than people think during long evenings without power.",
@@ -78,6 +100,11 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Do not forget kids, pets, and comfort items",
+        image: {
+          src: "/guides/72-hour-kit/family-seasonal.svg",
+          alt: "Illustration representing family members, pets, and seasonal gear included in a household emergency kit.",
+          caption: "Preparedness works better when the kit matches the people, pets, and weather realities you actually live with.",
+        },
         body: [
           "Children burn through patience and supplies faster than adults during disruption. Pack diapers, wipes, formula, snacks, comfort items, small activities, and any age-specific medicines they may need.",
           "Pets need food, water, leash or carrier gear, waste bags, and medication too. A household kit that ignores the animals is incomplete.",

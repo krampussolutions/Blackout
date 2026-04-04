@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import AdSlot from "@/components/AdSlot";
@@ -36,6 +37,17 @@ function buildSectionId(heading: string) {
   return heading.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+function GuideImageBlock({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
+  return (
+    <figure className="overflow-hidden rounded-3xl border border-white/10 bg-panelSoft">
+      <div className="relative aspect-[16/9] w-full">
+        <Image src={src} alt={alt} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 780px" />
+      </div>
+      {caption ? <figcaption className="px-4 py-3 text-sm text-muted">{caption}</figcaption> : null}
+    </figure>
+  );
+}
+
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const guide = getGuideBySlug(slug);
@@ -55,6 +67,8 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               <p className="mt-4 text-base leading-7 text-muted md:text-lg">{guide.intro}</p>
             </div>
 
+            {guide.coverImage ? <GuideImageBlock {...guide.coverImage} /> : null}
+
             <AdSlot title="Sponsored" variant="in-article" />
 
             {guide.sections.map((section, index) => (
@@ -68,9 +82,11 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
                       </p>
                     ))}
                   </div>
+
+                  {section.image ? <div className="mt-6"><GuideImageBlock {...section.image} /></div> : null}
                 </section>
 
-                {index === 3 ? <AdSlot title="Sponsored" variant="in-article" /> : null}
+                {index === 3 || index === 7 ? <AdSlot title="Sponsored" variant="in-article" /> : null}
               </div>
             ))}
           </div>
