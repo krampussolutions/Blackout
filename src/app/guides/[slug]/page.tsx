@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import AdSlot from "@/components/AdSlot";
-import { getGuideBySlug, guides } from "@/lib/guides";
+import { getGuideBySlug, guides, type GuideChecklistGroup, type GuideSection } from "@/lib/guides";
 
 export async function generateStaticParams() {
   return guides.map((guide) => ({ slug: guide.slug }));
@@ -40,11 +40,47 @@ function buildSectionId(heading: string) {
 function GuideImageBlock({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
   return (
     <figure className="overflow-hidden rounded-3xl border border-white/10 bg-panelSoft">
-      <div className="relative aspect-[16/9] w-full">
+      <div className="relative aspect-[16/9] w-full bg-[#0f1628]">
         <Image src={src} alt={alt} fill className="object-cover" sizes="(max-width: 1024px) 100vw, 780px" />
       </div>
-      {caption ? <figcaption className="px-4 py-3 text-sm text-muted">{caption}</figcaption> : null}
+      {caption ? <figcaption className="border-t border-white/10 px-4 py-3 text-sm text-muted">{caption}</figcaption> : null}
     </figure>
+  );
+}
+
+function ChecklistGroup({ title, items }: GuideChecklistGroup) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-panelSoft p-4">
+      <p className="text-sm font-semibold text-text">{title}</p>
+      <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">
+        {items.map((item) => (
+          <li key={item} className="flex gap-3">
+            <span className="mt-0.5 text-accent">✓</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SectionChecklist({ section }: { section: GuideSection }) {
+  if (!section.bullets?.length) {
+    return null;
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl border border-white/10 bg-panelSoft p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Quick checklist</p>
+      <ul className="mt-3 space-y-2 text-sm leading-6 text-muted md:text-base">
+        {section.bullets.map((item) => (
+          <li key={item} className="flex gap-3">
+            <span className="mt-0.5 text-accent">•</span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -58,7 +94,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
   return (
     <main className="container-shell py-10">
-      <article className="mx-auto max-w-5xl space-y-6">
+      <article className="mx-auto max-w-6xl space-y-6">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="space-y-6">
             <div className="card">
@@ -69,51 +105,79 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
 
             {guide.coverImage ? <GuideImageBlock {...guide.coverImage} /> : null}
 
+            {guide.quickChecklist?.length ? (
+              <section className="card">
+                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Scan this first</p>
+                    <h2 className="mt-2 text-2xl font-semibold">Fast 72-hour kit checklist</h2>
+                  </div>
+                  <p className="max-w-2xl text-sm leading-6 text-muted">
+                    Use this as your quick-pass packing list, then work through the full sections below to customize it
+                    for your home, vehicle, children, pets, and seasonal risks.
+                  </p>
+                </div>
+                <div className="mt-5 grid gap-4 lg:grid-cols-3">
+                  {guide.quickChecklist.map((group) => (
+                    <ChecklistGroup key={group.title} {...group} />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             <AdSlot title="Sponsored" variant="in-article" />
 
             {guide.sections.map((section, index) => (
-              <div key={section.heading} className="space-y-6">
-                <section id={buildSectionId(section.heading)} className="card scroll-mt-28">
-                  <h2 className="text-2xl font-semibold">{section.heading}</h2>
-                  <div className="mt-4 space-y-4">
+              <section key={section.heading} id={buildSectionId(section.heading)} className="card scroll-mt-28">
+                <div className="flex flex-col gap-6">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Section {index + 1}</p>
+                    <h2 className="mt-2 text-2xl font-semibold">{section.heading}</h2>
+                  </div>
+
+                  {section.image ? <GuideImageBlock {...section.image} /> : null}
+
+                  <SectionChecklist section={section} />
+
+                  <div className="space-y-4">
                     {section.body.map((paragraph) => (
                       <p key={paragraph} className="text-sm leading-7 text-muted md:text-base">
                         {paragraph}
                       </p>
                     ))}
                   </div>
+                </div>
 
-                  {section.image ? <div className="mt-6"><GuideImageBlock {...section.image} /></div> : null}
-                </section>
-
-                {index === 3 || index === 7 ? <AdSlot title="Sponsored" variant="in-article" /> : null}
-              </div>
+                {index === 5 ? <div className="mt-6"><AdSlot title="Sponsored" variant="in-article" /></div> : null}
+              </section>
             ))}
           </div>
 
           <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
-            <div className="card">
+            <nav className="card" aria-label="Guide sections">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">In this guide</p>
-              <div className="mt-4 space-y-2 text-sm">
-                {guide.sections.map((section) => (
-                  <a
-                    key={section.heading}
-                    href={`#${buildSectionId(section.heading)}`}
-                    className="block rounded-xl bg-panelSoft px-3 py-3 text-muted transition hover:bg-panel hover:text-text"
-                  >
-                    {section.heading}
-                  </a>
+              <ol className="mt-4 space-y-2 text-sm">
+                {guide.sections.map((section, index) => (
+                  <li key={section.heading}>
+                    <a
+                      href={`#${buildSectionId(section.heading)}`}
+                      className="flex items-start gap-3 rounded-xl border border-white/8 bg-panelSoft px-3 py-3 text-muted transition hover:border-white/15 hover:bg-panel hover:text-text"
+                    >
+                      <span className="min-w-5 text-xs font-semibold text-accent">{index + 1}</span>
+                      <span>{section.navLabel || section.heading}</span>
+                    </a>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ol>
+            </nav>
 
             <div className="card">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Why this matters</p>
-              <p className="mt-4 text-sm leading-7 text-muted">
-                Good preparedness content should help someone make better decisions right now. This guide is designed
-                to be practical enough for beginners without losing the details that matter during a real outage or
-                evacuation.
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Use this page well</p>
+              <ul className="mt-4 space-y-3 text-sm leading-6 text-muted">
+                <li>Start with the quick checklist, then fill in the household-specific gaps below.</li>
+                <li>Use the section links to jump back during storms, outages, or travel prep.</li>
+                <li>Review the kit twice a year so the bag stays ready instead of theoretical.</li>
+              </ul>
             </div>
           </aside>
         </div>

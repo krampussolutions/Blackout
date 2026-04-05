@@ -4,13 +4,27 @@ export type GuideImage = {
   caption?: string;
 };
 
+export type GuideSection = {
+  heading: string;
+  navLabel?: string;
+  body: string[];
+  bullets?: string[];
+  image?: GuideImage;
+};
+
+export type GuideChecklistGroup = {
+  title: string;
+  items: string[];
+};
+
 export type GuideEntry = {
   slug: string;
   title: string;
   description: string;
   intro: string;
   coverImage?: GuideImage;
-  sections: Array<{ heading: string; body: string[]; image?: GuideImage }>;
+  quickChecklist?: GuideChecklistGroup[];
+  sections: GuideSection[];
 };
 
 export const guides: GuideEntry[] = [
@@ -25,9 +39,44 @@ export const guides: GuideEntry[] = [
       alt: "Illustration of a staged 72-hour emergency kit with water, food, lighting, first-aid, and documents.",
       caption: "A good 72-hour kit covers the basics first: water, food, light, first aid, documents, clothing, and practical extras.",
     },
+    quickChecklist: [
+      {
+        title: "Pack first",
+        items: [
+          "Three days of water per person, plus pet water if needed",
+          "Shelf-stable food that can be eaten cold or with minimal prep",
+          "Headlamp or flashlight, batteries, and a charged power bank",
+          "Basic first-aid, hygiene items, and daily medications",
+        ],
+      },
+      {
+        title: "Do not forget",
+        items: [
+          "Manual can opener, utensils, lighter or matches if safe",
+          "Copies of IDs, emergency contacts, insurance, and small cash",
+          "Seasonal clothing, sturdy shoes, blankets, and rain gear",
+          "Kid supplies, pet gear, and one or two morale items",
+        ],
+      },
+      {
+        title: "Review on a schedule",
+        items: [
+          "Rotate food, water, batteries, and medications twice a year",
+          "Update clothing sizes, diapers, and pet food as needs change",
+          "Check cords, chargers, radios, and lighting before storm season",
+          "Keep the kit where you can grab it quickly, not buried in storage",
+        ],
+      },
+    ],
     sections: [
       {
         heading: "Start with your household, not somebody else’s list",
+        navLabel: "Start with your household",
+        bullets: [
+          "Count every person, pet, medication, and mobility need first",
+          "Build for your real risks: blackout, storm, wildfire, evacuation, or travel delay",
+          "Use one main household kit and smaller vehicle or grab-and-go kits if possible",
+        ],
         body: [
           "Before you buy gear, think through who the kit is actually for. A solo commuter kit looks different from a family kit kept at home, and both look different from a go-bag for evacuation.",
           "Count the people, pets, medications, and climate needs you actually have. A child in diapers, a diabetic adult, or a dog on daily medication changes the checklist fast.",
@@ -36,11 +85,17 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Water is the first priority",
+        navLabel: "Water first",
         image: {
           src: "/guides/72-hour-kit/water-food.svg",
           alt: "Illustration showing water containers, canned food, and compact ready-to-eat supplies for a 72-hour kit.",
           caption: "Stored water and low-prep food should be the first things staged, not the last things improvised.",
         },
+        bullets: [
+          "Plan for at least 1 gallon per person per day for 3 days",
+          "Store extra water for heat, illness, pets, and limited sanitation",
+          "Keep a backup option like purification tablets, a filter, or boiling capability",
+        ],
         body: [
           "Plan around one gallon of water per person per day for drinking and basic sanitation. For a full 72 hours, that means at least three gallons per person before you add extra for heat, illness, pets, or limited sanitation options.",
           "Stored water is better than relying only on filtration. Filters are important, but in the first hours of an outage or evacuation, ready-to-drink water is faster and more dependable.",
@@ -50,6 +105,12 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Pack food that needs almost nothing from you",
+        navLabel: "Low-prep food",
+        bullets: [
+          "Choose food that survives rough handling, temperature swings, and no microwave",
+          "Favor calories, protein, and convenience before comfort extras",
+          "Pack the can opener, spoon, and napkins with the food, not somewhere else",
+        ],
         body: [
           "A 72-hour kit is not the place for complicated meals. Choose shelf-stable foods that can be eaten cold, require little prep, and hold up well during travel or power loss.",
           "Good starter options include protein bars, peanut butter, crackers, canned meat, tuna, soup, trail mix, instant oatmeal, electrolyte packets, dried fruit, and ready-to-eat meals that only need hot water if available.",
@@ -59,11 +120,17 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Lighting and backup power make everything easier",
+        navLabel: "Light and power",
         image: {
           src: "/guides/72-hour-kit/light-medical.svg",
           alt: "Illustration of a lantern, flashlight, power bank, and first-aid pouch laid out for emergency use.",
           caption: "Hands-free light, charging options, and basic medical gear reduce stress fast during outages and evacuations.",
         },
+        bullets: [
+          "Lead with a headlamp, then add a flashlight and room light",
+          "Store spare batteries or charging cables with the device they belong to",
+          "Keep at least one charged power bank ready instead of still in the box",
+        ],
         body: [
           "A headlamp is usually one of the highest-value items in the whole kit because it keeps both hands free. Pair it with a small flashlight and at least one backup battery set or charging cable.",
           "A compact lantern helps a room feel calmer than a flashlight beam bouncing around the walls. That matters more than people think during long evenings without power.",
@@ -73,6 +140,12 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Cover first aid, hygiene, and daily meds",
+        navLabel: "Medical and hygiene",
+        bullets: [
+          "Stock bandages, gauze, tape, antiseptic, gloves, tweezers, and pain relief",
+          "Add hygiene basics: wipes, toilet paper, soap, feminine products, diapers, and trash bags",
+          "Rotate prescriptions, inhalers, backup glasses, and other personal medical needs",
+        ],
         body: [
           "Your kit should handle common injuries, minor illness, and personal care without needing a drugstore run. Stock bandages, gauze, tape, antiseptic wipes, gloves, pain relievers, antihistamines, tweezers, and any personal prescriptions you can legally and safely rotate.",
           "Do not forget hygiene basics. Toothbrushes, toothpaste, wipes, soap, toilet paper, feminine products, diapers, and trash bags are easy to overlook and miserable to do without.",
@@ -82,6 +155,12 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Documents, cash, and communication backups matter",
+        navLabel: "Docs, cash, and comms",
+        bullets: [
+          "Use a waterproof pouch for copies of IDs, insurance, contacts, and medical info",
+          "Keep small bills for fuel, food, and purchases when readers or ATMs fail",
+          "Write down one out-of-area contact and one meeting point for the household",
+        ],
         body: [
           "Keep a small waterproof pouch with copies of identification, insurance information, emergency contacts, local maps, and any key medical information you would need if your phone died or service went down.",
           "A little cash in small bills is worth carrying. Card readers, ATMs, and gas pumps do not always work smoothly during outages or evacuations.",
@@ -91,6 +170,12 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Clothing, shelter, and season-specific supplies",
+        navLabel: "Clothing and seasonal gear",
+        bullets: [
+          "Pack at least one weather layer, socks, and rain protection for each person",
+          "Adjust for your region: insulation in cold, extra hydration and sun protection in heat",
+          "Stage real shoes or boots next to the kit if evacuation is a possibility",
+        ],
         body: [
           "Add a weather layer for each person, even if the bag stays in the house. A hoodie, socks, gloves, poncho, emergency blanket, or rain shell can solve a lot of discomfort fast.",
           "Your local climate should shape the kit. Cold-weather kits need insulation, hand warmers, hats, and ways to stay dry. Hot-weather kits need extra water, electrolyte support, sun protection, and cooling considerations.",
@@ -100,11 +185,17 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Do not forget kids, pets, and comfort items",
+        navLabel: "Kids, pets, and comfort",
         image: {
           src: "/guides/72-hour-kit/family-seasonal.svg",
           alt: "Illustration representing family members, pets, and seasonal gear included in a household emergency kit.",
           caption: "Preparedness works better when the kit matches the people, pets, and weather realities you actually live with.",
         },
+        bullets: [
+          "Pack diapers, wipes, formula, small snacks, and simple comfort items for children",
+          "Add pet food, bowls, leash or carrier gear, waste bags, and medications",
+          "One small morale item per person helps more than people expect during a rough night",
+        ],
         body: [
           "Children burn through patience and supplies faster than adults during disruption. Pack diapers, wipes, formula, snacks, comfort items, small activities, and any age-specific medicines they may need.",
           "Pets need food, water, leash or carrier gear, waste bags, and medication too. A household kit that ignores the animals is incomplete.",
@@ -113,6 +204,12 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Store it well and review it on a schedule",
+        navLabel: "Store and review",
+        bullets: [
+          "Keep the kit in a labeled spot you can reach in the dark or in a hurry",
+          "Review twice a year and tie it to a date you already remember",
+          "Replace expired food, dead batteries, old meds, and outgrown clothing",
+        ],
         body: [
           "A great checklist does not help if the bag is buried behind holiday decorations or packed so heavily nobody wants to move it. Use durable containers, label them clearly, and keep them where you can reach them fast.",
           "Review the kit at least twice a year. Rotate food, water, batteries, clothing sizes, medications, and seasonal gear. Tie the review to daylight saving time, storm season, or another date you already remember.",
@@ -121,10 +218,17 @@ export const guides: GuideEntry[] = [
       },
       {
         heading: "Simple 72-hour kit starter checklist",
+        navLabel: "Starter checklist",
+        bullets: [
+          "Water: three gallons per person, bottles, and a backup purification option",
+          "Food: shelf-stable meals, snacks, can opener, and utensils",
+          "Light and power: headlamp, flashlight, batteries, radio, power bank, charging cords",
+          "Medical and hygiene: first-aid kit, prescriptions, wipes, soap, toilet paper, gloves",
+          "Documents and cash: IDs, contacts, insurance copies, maps, and small bills",
+          "Clothing and extras: socks, layers, blanket, rain gear, shoes, pet gear, kid items",
+        ],
         body: [
-          "For each person: water, easy food, one light source, weather layer, medications, hygiene basics, phone charging cable, and copies of important contacts.",
-          "For the household: first aid kit, can opener, power bank, radio, trash bags, cash, lighter or matches where appropriate, and a written plan for communication and meeting up.",
-          "For special needs: pet supplies, diapers, mobility or medical equipment, and climate-specific gear. The most important checklist is the one that matches your real life.",
+          "For each person, start with water, food, light, first aid, basic hygiene, medications, charging, clothing layers, and a copy of emergency information. Then add needs that are specific to your household such as infant supplies, pet gear, mobility or medical equipment, and climate-specific gear. The most important checklist is the one that matches your real life.",
         ],
       },
     ],
