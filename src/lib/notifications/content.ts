@@ -16,9 +16,6 @@ export function getNotificationText(
       }
       return `${actorName} liked your post${notification.metadata?.post_title ? `: ${notification.metadata.post_title}` : "."}`;
     case "comment":
-      if (notification.metadata?.target === "reply") {
-        return `${actorName} replied to your comment${notification.metadata?.comment_excerpt ? `: ${notification.metadata.comment_excerpt}` : "."}`;
-      }
       return `${actorName} commented on your post${notification.metadata?.post_title ? `: ${notification.metadata.post_title}` : "."}`;
     case "follow":
       return `${actorName} followed you.`;

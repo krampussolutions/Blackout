@@ -1,160 +1,124 @@
 import Link from "next/link";
-import type { Metadata } from "next";
+import MemberCard from "@/components/MemberCard";
 import PostCard from "@/components/PostCard";
-import PromptListCard from "@/components/PromptListCard";
-import { COMMUNITY_PROMPTS, computeForYouScore, formatCommunityLabel, isActiveDiscussion } from "@/lib/community";
 import { guides } from "@/lib/guides";
-import { FOUNDER_BADGE_INVITE_TARGET } from "@/lib/referrals";
+import { type MemberProfile } from "@/lib/site";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = {
-  title: "Blackout Network | Prepper Community for Blackouts, Off-Grid Living, and Emergency Readiness",
-  description:
-    "Join a preparedness community focused on blackouts, emergency planning, off-grid living, food storage, water, medical prep, and self-reliance.",
-};
-
-const FEATURED_GUIDE_SLUGS = [
-  "72-hour-kit-checklist",
-  "how-to-store-water",
-  "family-emergency-comms-plan",
+const stats = [
+  { label: "Preparedness topics", value: "6+" },
+  { label: "Starter groups", value: "8" },
+  { label: "Guides to publish", value: "5" },
 ];
 
-type HomePost = {
-  id: string;
-  title: string;
-  category: string;
-  author: string;
-  authorDisplayName?: string;
-  excerpt: string;
-  comments: number;
-  likes: number;
-  initialLiked: boolean;
-  isOwner: boolean;
-  groupName?: string;
-  groupSlug?: string;
-  postOwnerId?: string;
-  createdAt?: string;
-};
-
-type ActiveGroup = {
-  slug: string;
-  name: string;
-  description: string;
-  memberCount: number;
-  postCount: number;
-};
+function formatMember(member: {
+  id?: string;
+  username: string;
+  display_name?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  avatar_url?: string | null;
+  cover_url?: string | null;
+  interests?: string[] | null;
+  created_at?: string | null;
+  founder_badge_earned?: boolean | null;
+  followers?: number;
+  following?: number;
+  posts?: number;
+  isFollowing?: boolean;
+  isCurrentUser?: boolean;
+}): MemberProfile {
+  return {
+    id: member.id,
+    username: member.username,
+    displayName: member.display_name || member.username,
+    bio: member.bio || "Preparedness-minded member.",
+    location: member.location || "Location not set",
+    avatar: member.username.slice(0, 2).toUpperCase(),
+    avatarUrl: member.avatar_url,
+    cover: "from-slate-700 via-slate-800 to-zinc-950",
+    coverUrl: member.cover_url,
+    interests: member.interests?.length ? member.interests : ["Preparedness"],
+    followers: member.followers || 0,
+    following: member.following || 0,
+    posts: member.posts || 0,
+    joinedLabel: member.created_at
+      ? `Joined ${new Date(member.created_at).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        })}`
+      : "Joined recently",
+    isFollowing: member.isFollowing || false,
+    isCurrentUser: member.isCurrentUser || false,
+    founderBadgeEarned: member.founder_badge_earned || false,
+  };
+}
 
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: dbPosts }, { data: dbGroups }] = await Promise.all([
-    supabase
-      .from("posts")
-      .select(
-        "id, title, content, created_at, user_id, groups(id, name, slug), categories(name, slug), profiles!posts_user_id_fkey(username, display_name)"
-      )
-      .order("created_at", { ascending: false })
-      .limit(12),
-    supabase.from("groups").select("id, name, slug, description").order("name"),
-  ]);
-
-  const posts: HomePost[] = dbPosts?.length
-    ? await Promise.all(
-        dbPosts.map(async (post) => {
-          const author = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-          const category = Array.isArray(post.categories) ? post.categories[0] : post.categories;
-          const group = Array.isArray(post.groups) ? post.groups[0] : post.groups;
-
-          const [{ count: likeCount }, { count: commentCount }] = await Promise.all([
-            supabase.from("likes").select("id", { count: "exact", head: true }).eq("post_id", post.id),
-            supabase.from("comments").select("id", { count: "exact", head: true }).eq("post_id", post.id),
-          ]);
-
-          return {
-            id: post.id,
-            title: post.title,
-            category: formatCommunityLabel(category?.name || "General Preparedness"),
-            author: author?.username || "member",
-            authorDisplayName: author?.display_name || author?.username || "member",
-            excerpt: post.content,
-            comments: commentCount || 0,
-            likes: likeCount || 0,
-            initialLiked: false,
-            isOwner: false,
-            groupName: group?.name ? formatCommunityLabel(group.name) : undefined,
-            groupSlug: group?.slug || undefined,
-            postOwnerId: post.user_id,
-            createdAt: post.created_at,
-          };
-        })
-      )
-    : [];
-
-  const activePosts = posts
-    .filter((post) => isActiveDiscussion(post, { minComments: 1, minLikes: 2 }))
-    .sort((a, b) => computeForYouScore(b, false) - computeForYouScore(a, false))
-    .slice(0, 4);
-
-  const fallbackPosts = activePosts.length ? activePosts : posts.slice(0, 3);
-
-  const activeGroups: ActiveGroup[] = dbGroups?.length
-    ? (
-        await Promise.all(
-          dbGroups.map(async (group) => {
-            const [{ count: memberCount }, { count: postCount }] = await Promise.all([
-              supabase.from("group_members").select("id", { count: "exact", head: true }).eq("group_id", group.id),
-              supabase.from("posts").select("id", { count: "exact", head: true }).eq("group_id", group.id),
-            ]);
-
-            return {
-              slug: group.slug,
-              name: formatCommunityLabel(group.name),
-              description: group.description || "Preparedness group",
-              memberCount: memberCount || 0,
-              postCount: postCount || 0,
-            };
-          })
+  const [{ data: dbPosts }, { data: dbMembers }, { data: dbCategories }, { data: dbGroups }] =
+    await Promise.all([
+      supabase
+        .from("posts")
+        .select(
+          "id, title, content, created_at, user_id, groups(name, slug), categories(name, slug), profiles!posts_user_id_fkey(username, display_name)"
         )
-      )
-        .filter((group) => group.memberCount > 0 || group.postCount > 0)
-        .sort((a, b) => b.postCount * 2 + b.memberCount - (a.postCount * 2 + a.memberCount))
-        .slice(0, 4)
+        .order("created_at", { ascending: false })
+        .limit(6),
+      supabase
+        .from("profiles")
+        .select(
+          "id, username, display_name, bio, location, avatar_url, cover_url, interests, founder_badge_earned, created_at"
+        )
+        .order("created_at", { ascending: false })
+        .limit(4),
+      supabase.from("categories").select("name, slug, description").order("name").limit(6),
+      supabase.from("groups").select("name, slug, description").order("created_at", { ascending: false }).limit(4),
+    ]);
+
+  const posts = dbPosts?.length
+    ? dbPosts.map((post) => {
+        const author = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+        const category = Array.isArray(post.categories) ? post.categories[0] : post.categories;
+        const group = Array.isArray(post.groups) ? post.groups[0] : post.groups;
+        return {
+          id: post.id,
+          title: post.title,
+          category: category?.name || "General Preparedness",
+          author: author?.username || "member",
+          authorDisplayName: author?.display_name || author?.username || "member",
+          excerpt: post.content,
+          comments: 0,
+          likes: 0,
+          initialLiked: false,
+          isOwner: false,
+          groupName: group?.name || undefined,
+          groupSlug: group?.slug || undefined,
+          postOwnerId: post.user_id,
+        };
+      })
     : [];
 
-  const featuredGuides = FEATURED_GUIDE_SLUGS.map((slug) => guides.find((guide) => guide.slug === slug)).filter(
-    (guide): guide is NonNullable<(typeof guides)[number]> => Boolean(guide)
-  );
-
-  const stats = [
-    { label: "Public guides", value: String(guides.length) },
-    { label: "Active groups", value: String(activeGroups.length) },
-    { label: "Live discussions", value: String(fallbackPosts.length) },
-  ];
+  const members = (dbMembers || []).map((member) => formatMember(member));
 
   return (
     <main className="container-shell py-8 md:py-10">
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)_300px]">
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
           <div className="card">
             <p className="text-xs uppercase tracking-[0.22em] text-muted">Preparedness community</p>
-            <h1 className="mt-4 max-w-4xl text-3xl font-bold leading-tight md:text-4xl">
-              Preparedness community for blackouts, emergencies, and off-grid living.
+            <h1 className="mt-4 text-3xl font-bold leading-tight">
+              Join a network built for blackouts, outages, off-grid living, and self-reliance.
             </h1>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-muted md:text-base">
-              Join people sharing practical advice on food storage, backup power, water, medical prep,
-              communications, and self-reliance. Learn, ask questions, and build your network before the next emergency.
+            <p className="mt-4 text-sm leading-6 text-muted">
+              Blackout Network is a social platform for practical readiness. Join discussions, follow members,
+              explore groups, and learn from people building real-world preparedness systems.
             </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link href="/join" className="button-primary">
-                Join Free
-              </Link>
-              <Link href="/guides" className="button-secondary">
-                Explore Guides
-              </Link>
+            <div className="mt-5 grid gap-2">
+              <Link href="/join" className="button-primary">Join Blackout Network</Link>
+              <Link href="/feed" className="button-secondary">Explore the feed</Link>
             </div>
-            <p className="mt-4 text-sm text-muted">
-              No paid membership required. Join discussions, follow members, and build your preparedness network.
-            </p>
             <div className="mt-6 grid grid-cols-3 gap-3">
               {stats.map((stat) => (
                 <div key={stat.label} className="rounded-2xl border border-border bg-panelSoft px-3 py-3 text-center">
@@ -165,144 +129,112 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="card border-brand/25 bg-gradient-to-br from-brand/10 via-panel to-panel">
-            <p className="text-xs uppercase tracking-[0.22em] text-muted">Join early</p>
-            <h2 className="mt-3 text-2xl font-bold text-text">Invite friends and unlock Founder status</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
-              Invite {FOUNDER_BADGE_INVITE_TARGET} people who create accounts through your invite link and unlock the Founder badge.
-              Early members may also unlock future recognition and perks as the network grows.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link href="/invite" className="button-primary">
-                Learn About Invites
-              </Link>
-              <Link href="/signup" className="button-secondary">
-                Create Account
-              </Link>
+          <div className="card">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Why join</h2>
+            <div className="mt-4 space-y-3 text-sm text-muted">
+              <div className="rounded-xl bg-panelSoft px-3 py-3">
+                Find practical posts on blackout prep, food storage, comms, water, and medical basics.
+              </div>
+              <div className="rounded-xl bg-panelSoft px-3 py-3">
+                Connect with other members who are building resilient homes, families, and communities.
+              </div>
+              <div className="rounded-xl bg-panelSoft px-3 py-3">
+                Explore groups and public guides without digging through noisy, general-purpose platforms.
+              </div>
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            {[
-              {
-                title: "Practical discussions",
-                body: "Get real tips on blackouts, storms, food storage, water, medical basics, and off-grid living.",
-              },
-              {
-                title: "Preparedness guides",
-                body: "Read public guides on kits, water storage, family communications, and household blackout planning.",
-              },
-              {
-                title: "Build your circle",
-                body: "Follow members, join groups, and connect with people who take preparedness seriously.",
-              },
-            ].map((item) => (
-              <div key={item.title} className="card h-full bg-panelSoft">
-                <h2 className="text-lg font-semibold text-text">{item.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-muted">{item.body}</p>
+          <div className="card">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Popular categories</h2>
+            <div className="mt-4 space-y-3">
+              {(dbCategories || []).length ? (dbCategories || []).map((category) => (
+                <Link key={category.slug} href={`/feed?category=${category.slug}`} className="block rounded-xl bg-panelSoft px-3 py-3 transition hover:text-text">
+                  <div className="font-medium text-text">{category.name}</div>
+                  <p className="mt-1 text-xs leading-5 text-muted">{category.description}</p>
+                </Link>
+              )) : <div className="rounded-xl bg-panelSoft px-3 py-3 text-sm text-muted">No categories yet.</div>}
+            </div>
+          </div>
+        </aside>
+
+        <section className="min-w-0 space-y-4">
+          <div className="card">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="max-w-2xl">
+                <p className="text-xs uppercase tracking-[0.22em] text-muted">New to the network?</p>
+                <h2 className="mt-3 text-2xl font-bold">Start with the feed, then build your profile and join groups.</h2>
+                <p className="mt-3 text-sm leading-6 text-muted">
+                  The fastest path is simple: create an account, add your interests, follow a few members,
+                  and contribute one useful post or comment.
+                </p>
               </div>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/signup" className="button-primary">Create account</Link>
+                <Link href="/members" className="button-secondary">Browse members</Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {guides.slice(0, 2).map((guide) => (
+              <Link key={guide.slug} href={`/guides/${guide.slug}`} className="card block transition hover:border-brand/40">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted">Public guide</p>
+                <h3 className="mt-3 text-xl font-semibold">{guide.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-muted">{guide.description}</p>
+              </Link>
             ))}
           </div>
 
-          <div className="card">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-muted">Start here</p>
-                <h2 className="mt-3 text-2xl font-bold">Featured guides for new members</h2>
-                <p className="mt-2 text-sm leading-6 text-muted">
-                  These are the best first reads for people getting serious about blackout prep and household readiness.
-                </p>
-              </div>
-              <Link href="/guides" className="button-secondary">
-                View All Guides
-              </Link>
-            </div>
-            <div className="mt-5 grid gap-4 md:grid-cols-3">
-              {featuredGuides.map((guide) => (
-                <Link key={guide.slug} href={`/guides/${guide.slug}`} className="rounded-2xl border border-border bg-panelSoft px-5 py-5 transition hover:border-brand/40 hover:bg-panel">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted">Public guide</p>
-                  <h3 className="mt-3 text-xl font-semibold text-text">{guide.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted">{guide.description}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-muted">Real activity</p>
-                <h2 className="mt-3 text-2xl font-bold">Active discussions from the network</h2>
-                <p className="mt-2 text-sm leading-6 text-muted">
-                  Only discussions with real engagement are featured here.
-                </p>
-              </div>
-              <Link href="/feed" className="button-secondary">
-                Open Feed
-              </Link>
-            </div>
-          </div>
-
-          {fallbackPosts.length ? (
-            fallbackPosts.map((post) => <PostCard key={post.id} {...post} />)
-          ) : (
+          {posts.length ? posts.map((post) => (
+            <PostCard key={post.id} {...post} />
+          )) : (
             <div className="card text-sm text-muted">No real posts yet. Be the first to create one.</div>
           )}
-
-          <div className="card">
-            <h2 className="text-2xl font-bold text-text">Preparedness is better with a network</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
-              Whether you are building a first emergency kit or planning for long-term self-reliance,
-              Blackout Network gives you a place to learn, share, and connect.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link href="/signup" className="button-primary">
-                Create Free Account
-              </Link>
-              <Link href="/feed" className="button-secondary">
-                Browse the Community
-              </Link>
-            </div>
-          </div>
         </section>
 
         <aside className="space-y-4 lg:sticky lg:top-24 lg:h-fit">
           <div className="card">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Popular groups</h2>
-            <p className="mt-3 text-sm leading-6 text-muted">
-              Groups with real members or real discussion are surfaced first.
-            </p>
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Suggested members</h2>
             <div className="mt-4 space-y-3">
-              {activeGroups.length ? (
-                activeGroups.map((group) => (
-                  <Link
-                    key={group.slug}
-                    href={`/groups/${group.slug}`}
-                    className="block rounded-2xl border border-border bg-panelSoft px-4 py-4 transition hover:border-brand/40 hover:bg-panel"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="font-medium text-text">{group.name}</div>
-                        <p className="mt-1 text-sm leading-6 text-muted">{group.description}</p>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted">
-                      {group.memberCount > 0 ? <span>{group.memberCount} members</span> : null}
-                      {group.postCount > 0 ? <span>{group.postCount} posts</span> : null}
-                    </div>
-                  </Link>
-                ))
-              ) : (
-                <div className="rounded-2xl bg-panelSoft px-4 py-4 text-sm text-muted">Groups will appear here once members start joining and posting.</div>
+              {members.length ? members.map((member) => (
+                <MemberCard key={member.username} member={member} />
+              )) : (
+                <div className="text-sm text-muted">No real members yet.</div>
               )}
             </div>
           </div>
 
-          <PromptListCard
-            title="Need an idea for your first post?"
-            description="Use a real prompt instead of filler. These are meant to spark actual member discussion."
-            prompts={COMMUNITY_PROMPTS.slice(0, 4)}
-          />
+          <div className="card">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Suggested groups</h2>
+              <Link href="/groups" className="text-xs text-muted hover:text-text">View all</Link>
+            </div>
+            <div className="mt-4 space-y-3">
+              {(dbGroups || []).length ? (dbGroups || []).map((group) => (
+                <Link key={group.slug} href={`/groups/${group.slug}`} className="block rounded-xl border border-border bg-panelSoft px-4 py-4 transition hover:border-brand/40">
+                  <div className="font-medium text-text">{group.name}</div>
+                  <p className="mt-1 text-xs leading-5 text-muted">{group.description}</p>
+                </Link>
+              )) : (
+                <div className="text-sm text-muted">No groups yet.</div>
+              )}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">Start here</h2>
+              <Link href="/guides" className="text-xs text-muted hover:text-text">All guides</Link>
+            </div>
+            <div className="mt-4 space-y-3">
+              {guides.slice(0, 3).map((guide) => (
+                <Link key={guide.slug} href={`/guides/${guide.slug}`} className="block rounded-xl bg-panelSoft px-3 py-3 transition hover:text-text">
+                  <div className="font-medium text-text">{guide.title}</div>
+                  <p className="mt-1 text-xs leading-5 text-muted">{guide.description}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
         </aside>
       </div>
     </main>

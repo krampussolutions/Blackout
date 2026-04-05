@@ -1,20 +1,12 @@
-export type GuideImage = {
-  src: string;
-  alt: string;
-  caption?: string;
-};
-
 export type GuideSection = {
+  id?: string;
   heading: string;
-  navLabel?: string;
+  summary?: string;
   body: string[];
   bullets?: string[];
-  image?: GuideImage;
-};
-
-export type GuideChecklistGroup = {
-  title: string;
-  items: string[];
+  imageSrc?: string;
+  imageAlt?: string;
+  imageCaption?: string;
 };
 
 export type GuideEntry = {
@@ -22,8 +14,13 @@ export type GuideEntry = {
   title: string;
   description: string;
   intro: string;
-  coverImage?: GuideImage;
-  quickChecklist?: GuideChecklistGroup[];
+  readTime?: string;
+  publishedLabel?: string;
+  updatedLabel?: string;
+  coverImageSrc?: string;
+  coverImageAlt?: string;
+  coverImageCaption?: string;
+  quickChecklist?: string[];
   sections: GuideSection[];
 };
 
@@ -31,234 +28,170 @@ export const guides: GuideEntry[] = [
   {
     slug: "72-hour-kit-checklist",
     title: "72-Hour Kit Checklist for Blackouts and Emergencies",
-    description: "Build a practical 72-hour kit with water, food, power, medical gear, documents, and season-specific supplies.",
+    description: "Build a practical 72-hour kit with water, lighting, food, power, and medical basics.",
     intro:
-      "A 72-hour kit is your short-term cushion when normal routines break down. It helps you get through blackouts, storms, road closures, evacuations, and household emergencies without immediately scrambling for basics. The goal is not to build the perfect bag overnight. The goal is to cover the first three days with dependable essentials that are easy to carry, easy to find, and easy to maintain.",
-    coverImage: {
-      src: "/guides/72-hour-kit/hero-kit.svg",
-      alt: "Illustration of a staged 72-hour emergency kit with water, food, lighting, first-aid, and documents.",
-      caption: "A good 72-hour kit covers the basics first: water, food, light, first aid, documents, clothing, and practical extras.",
-    },
+      "A 72-hour kit is your short-term cushion when normal routines break down. It helps you get through blackouts, storms, road closures, evacuations, and household emergencies without immediately scrambling for basics.",
+    readTime: "10 min read",
+    publishedLabel: "Published January 2025",
+    updatedLabel: "Updated April 2026",
+    coverImageSrc: "/guides/72-hour-kit/hero-kit.svg",
+    coverImageAlt: "Illustration of a packed emergency bag with water, food, lighting, and first aid supplies.",
+    coverImageCaption:
+      "Start with the basics you can grab fast: water, food, light, first aid, power, and comfort items.",
     quickChecklist: [
-      {
-        title: "Pack first",
-        items: [
-          "Three days of water per person, plus pet water if needed",
-          "Shelf-stable food that can be eaten cold or with minimal prep",
-          "Headlamp or flashlight, batteries, and a charged power bank",
-          "Basic first-aid, hygiene items, and daily medications",
-        ],
-      },
-      {
-        title: "Do not forget",
-        items: [
-          "Manual can opener, utensils, lighter or matches if safe",
-          "Copies of IDs, emergency contacts, insurance, and small cash",
-          "Seasonal clothing, sturdy shoes, blankets, and rain gear",
-          "Kid supplies, pet gear, and one or two morale items",
-        ],
-      },
-      {
-        title: "Review on a schedule",
-        items: [
-          "Rotate food, water, batteries, and medications twice a year",
-          "Update clothing sizes, diapers, and pet food as needs change",
-          "Check cords, chargers, radios, and lighting before storm season",
-          "Keep the kit where you can grab it quickly, not buried in storage",
-        ],
-      },
+      "Store at least 3 gallons of water per person for the first 72 hours.",
+      "Pack simple shelf-stable food, a can opener, and utensils.",
+      "Stage lighting, batteries, a power bank, and a radio in one place.",
+      "Add first aid, prescriptions, hygiene items, and daily-use basics.",
+      "Include shoes, clothes, copies of documents, cash, and family-specific extras.",
     ],
     sections: [
       {
-        heading: "Start with your household, not somebody else’s list",
-        navLabel: "Start with your household",
-        bullets: [
-          "Count every person, pet, medication, and mobility need first",
-          "Build for your real risks: blackout, storm, wildfire, evacuation, or travel delay",
-          "Use one main household kit and smaller vehicle or grab-and-go kits if possible",
-        ],
+        heading: "Water and food",
+        summary: "Start with the items your household needs first when utilities or stores are unavailable.",
         body: [
-          "Before you buy gear, think through who the kit is actually for. A solo commuter kit looks different from a family kit kept at home, and both look different from a go-bag for evacuation.",
-          "Count the people, pets, medications, and climate needs you actually have. A child in diapers, a diabetic adult, or a dog on daily medication changes the checklist fast.",
-          "If possible, build one main household kit and then smaller grab-and-go kits for each vehicle or family member. That keeps the essentials centralized without leaving you exposed if you have to leave quickly.",
+          "Water matters more than almost anything else in the first phase of an emergency. Three days goes fast, especially if you are drinking, cooking, and doing minimal cleanup out of the same supply.",
+          "Food should be easy to open, easy to portion, and easy to eat under stress. A 72-hour kit is not the place for complicated cooking plans or bulky pantry storage.",
         ],
+        bullets: [
+          "At least 1 gallon of water per person per day, with extra for pets and medical needs.",
+          "Shelf-stable meals, canned food, protein bars, instant oatmeal, rice pouches, and snacks.",
+          "Manual can opener, utensils, paper towels, and a few trash bags.",
+        ],
+        imageSrc: "/guides/72-hour-kit/water-food.svg",
+        imageAlt: "Emergency water, food, and basic meal supplies arranged on a dark background.",
+        imageCaption: "Keep food simple and water easy to reach.",
       },
       {
-        heading: "Water is the first priority",
-        navLabel: "Water first",
-        image: {
-          src: "/guides/72-hour-kit/water-food.svg",
-          alt: "Illustration showing water containers, canned food, and compact ready-to-eat supplies for a 72-hour kit.",
-          caption: "Stored water and low-prep food should be the first things staged, not the last things improvised.",
-        },
-        bullets: [
-          "Plan for at least 1 gallon per person per day for 3 days",
-          "Store extra water for heat, illness, pets, and limited sanitation",
-          "Keep a backup option like purification tablets, a filter, or boiling capability",
-        ],
+        heading: "Tools, light, power, and medical",
+        summary: "This is the layer that makes the first night easier and the first problem less stressful.",
         body: [
-          "Plan around one gallon of water per person per day for drinking and basic sanitation. For a full 72 hours, that means at least three gallons per person before you add extra for heat, illness, pets, or limited sanitation options.",
-          "Stored water is better than relying only on filtration. Filters are important, but in the first hours of an outage or evacuation, ready-to-drink water is faster and more dependable.",
-          "Use sturdy bottles or containers you can rotate on a schedule. If you have room, keep extra water separate from the bag so you can top off your short-term kit without overloading it.",
-          "A small backup filter, purification tablets, or the ability to boil water gives you a second layer if the disruption lasts longer than expected.",
+          "A dark house feels chaotic fast. Good lighting, spare batteries, and a small backup radio help you stay organized and reduce stress during a blackout or evacuation.",
+          "Medical and hygiene items should cover the basics you know your household uses. Your kit does not need to replace a full medicine cabinet, but it should solve the first obvious problems.",
         ],
+        bullets: [
+          "Headlamp or flashlight, lantern, spare batteries, and at least one power bank.",
+          "Weather radio, multi-tool, duct tape, gloves, and charging cables.",
+          "First aid kit, prescriptions, pain relievers, sanitizer, wipes, and toilet paper.",
+        ],
+        imageSrc: "/guides/72-hour-kit/light-medical.svg",
+        imageAlt: "Lighting, radio, first aid, and backup power gear for a 72-hour emergency kit.",
+        imageCaption: "Hands-free light and medical basics solve a lot of early outage problems.",
       },
       {
-        heading: "Pack food that needs almost nothing from you",
-        navLabel: "Low-prep food",
-        bullets: [
-          "Choose food that survives rough handling, temperature swings, and no microwave",
-          "Favor calories, protein, and convenience before comfort extras",
-          "Pack the can opener, spoon, and napkins with the food, not somewhere else",
-        ],
+        heading: "Family, comfort, and seasonal extras",
+        summary: "Households with kids, pets, or weather risks need more than the bare minimum list.",
         body: [
-          "A 72-hour kit is not the place for complicated meals. Choose shelf-stable foods that can be eaten cold, require little prep, and hold up well during travel or power loss.",
-          "Good starter options include protein bars, peanut butter, crackers, canned meat, tuna, soup, trail mix, instant oatmeal, electrolyte packets, dried fruit, and ready-to-eat meals that only need hot water if available.",
-          "Keep a manual can opener in the kit if any food depends on it. Do not assume you will remember where the kitchen opener is when the lights are out or you need to leave quickly.",
-          "Focus on calories, protein, and convenience first. Comfort foods matter too, especially for children, but the bag should solve hunger before it solves morale.",
+          "A kit works better when it reflects your actual household. Diapers, formula, pet food, spare glasses, hearing aid batteries, and comfort items are not extras if you depend on them.",
+          "Seasonal additions matter too. Cold weather may mean blankets, gloves, and hand warmers. Hot climates may mean cooling towels, sunscreen, and more water.",
         ],
-      },
-      {
-        heading: "Lighting and backup power make everything easier",
-        navLabel: "Light and power",
-        image: {
-          src: "/guides/72-hour-kit/light-medical.svg",
-          alt: "Illustration of a lantern, flashlight, power bank, and first-aid pouch laid out for emergency use.",
-          caption: "Hands-free light, charging options, and basic medical gear reduce stress fast during outages and evacuations.",
-        },
         bullets: [
-          "Lead with a headlamp, then add a flashlight and room light",
-          "Store spare batteries or charging cables with the device they belong to",
-          "Keep at least one charged power bank ready instead of still in the box",
+          "Clothes, sturdy shoes, blanket, poncho, and compact shelter layers.",
+          "Diapers, wipes, formula, baby supplies, and comfort items for children.",
+          "Pet food, water bowl, leash, waste bags, and copies of key documents and IDs.",
         ],
-        body: [
-          "A headlamp is usually one of the highest-value items in the whole kit because it keeps both hands free. Pair it with a small flashlight and at least one backup battery set or charging cable.",
-          "A compact lantern helps a room feel calmer than a flashlight beam bouncing around the walls. That matters more than people think during long evenings without power.",
-          "Add at least one charged power bank and the cords your household actually uses. Label or bundle the cables so you are not sorting through random chargers when phones are low.",
-          "If you rely on rechargeable gear, keep a backup option that does not depend on wall power being restored quickly. A dead power bank is just extra weight.",
-        ],
-      },
-      {
-        heading: "Cover first aid, hygiene, and daily meds",
-        navLabel: "Medical and hygiene",
-        bullets: [
-          "Stock bandages, gauze, tape, antiseptic, gloves, tweezers, and pain relief",
-          "Add hygiene basics: wipes, toilet paper, soap, feminine products, diapers, and trash bags",
-          "Rotate prescriptions, inhalers, backup glasses, and other personal medical needs",
-        ],
-        body: [
-          "Your kit should handle common injuries, minor illness, and personal care without needing a drugstore run. Stock bandages, gauze, tape, antiseptic wipes, gloves, pain relievers, antihistamines, tweezers, and any personal prescriptions you can legally and safely rotate.",
-          "Do not forget hygiene basics. Toothbrushes, toothpaste, wipes, soap, toilet paper, feminine products, diapers, and trash bags are easy to overlook and miserable to do without.",
-          "If someone in the home needs glasses, hearing aid batteries, inhalers, insulin supplies, mobility aids, or backup medical paperwork, those items belong on the checklist before you add more gear gadgets.",
-          "Check expiration dates and refill cycles regularly. Medical readiness fails quietly when people assume a kit packed a year ago is still ready today.",
-        ],
-      },
-      {
-        heading: "Documents, cash, and communication backups matter",
-        navLabel: "Docs, cash, and comms",
-        bullets: [
-          "Use a waterproof pouch for copies of IDs, insurance, contacts, and medical info",
-          "Keep small bills for fuel, food, and purchases when readers or ATMs fail",
-          "Write down one out-of-area contact and one meeting point for the household",
-        ],
-        body: [
-          "Keep a small waterproof pouch with copies of identification, insurance information, emergency contacts, local maps, and any key medical information you would need if your phone died or service went down.",
-          "A little cash in small bills is worth carrying. Card readers, ATMs, and gas pumps do not always work smoothly during outages or evacuations.",
-          "Write down at least one out-of-area contact and one local meeting point. People often assume they will remember numbers and plans under stress, but that confidence disappears fast when batteries are low and routines are broken.",
-          "A battery radio or crank radio can also belong in the kit if severe weather, wildfire, or infrastructure outages are common in your area.",
-        ],
-      },
-      {
-        heading: "Clothing, shelter, and season-specific supplies",
-        navLabel: "Clothing and seasonal gear",
-        bullets: [
-          "Pack at least one weather layer, socks, and rain protection for each person",
-          "Adjust for your region: insulation in cold, extra hydration and sun protection in heat",
-          "Stage real shoes or boots next to the kit if evacuation is a possibility",
-        ],
-        body: [
-          "Add a weather layer for each person, even if the bag stays in the house. A hoodie, socks, gloves, poncho, emergency blanket, or rain shell can solve a lot of discomfort fast.",
-          "Your local climate should shape the kit. Cold-weather kits need insulation, hand warmers, hats, and ways to stay dry. Hot-weather kits need extra water, electrolyte support, sun protection, and cooling considerations.",
-          "If evacuation is a possibility, include sturdy shoes or at least keep them staged next to the kit. Walking out in slides or barefoot because the kit was packed but the footwear was forgotten is a common oversight.",
-          "For vehicle kits, assume you may be stranded for hours before help arrives. That makes blankets, visibility gear, and weather protection more important than they look on paper.",
-        ],
-      },
-      {
-        heading: "Do not forget kids, pets, and comfort items",
-        navLabel: "Kids, pets, and comfort",
-        image: {
-          src: "/guides/72-hour-kit/family-seasonal.svg",
-          alt: "Illustration representing family members, pets, and seasonal gear included in a household emergency kit.",
-          caption: "Preparedness works better when the kit matches the people, pets, and weather realities you actually live with.",
-        },
-        bullets: [
-          "Pack diapers, wipes, formula, small snacks, and simple comfort items for children",
-          "Add pet food, bowls, leash or carrier gear, waste bags, and medications",
-          "One small morale item per person helps more than people expect during a rough night",
-        ],
-        body: [
-          "Children burn through patience and supplies faster than adults during disruption. Pack diapers, wipes, formula, snacks, comfort items, small activities, and any age-specific medicines they may need.",
-          "Pets need food, water, leash or carrier gear, waste bags, and medication too. A household kit that ignores the animals is incomplete.",
-          "A few morale items can make a rough situation more manageable. Think deck of cards, not entertainment center. Simple comfort goes a long way when power is out and routines are disrupted.",
-        ],
-      },
-      {
-        heading: "Store it well and review it on a schedule",
-        navLabel: "Store and review",
-        bullets: [
-          "Keep the kit in a labeled spot you can reach in the dark or in a hurry",
-          "Review twice a year and tie it to a date you already remember",
-          "Replace expired food, dead batteries, old meds, and outgrown clothing",
-        ],
-        body: [
-          "A great checklist does not help if the bag is buried behind holiday decorations or packed so heavily nobody wants to move it. Use durable containers, label them clearly, and keep them where you can reach them fast.",
-          "Review the kit at least twice a year. Rotate food, water, batteries, clothing sizes, medications, and seasonal gear. Tie the review to daylight saving time, storm season, or another date you already remember.",
-          "Preparedness works best when the kit is simple enough to maintain. A realistic kit that gets checked is far better than an elaborate setup that is forgotten.",
-        ],
-      },
-      {
-        heading: "Simple 72-hour kit starter checklist",
-        navLabel: "Starter checklist",
-        bullets: [
-          "Water: three gallons per person, bottles, and a backup purification option",
-          "Food: shelf-stable meals, snacks, can opener, and utensils",
-          "Light and power: headlamp, flashlight, batteries, radio, power bank, charging cords",
-          "Medical and hygiene: first-aid kit, prescriptions, wipes, soap, toilet paper, gloves",
-          "Documents and cash: IDs, contacts, insurance copies, maps, and small bills",
-          "Clothing and extras: socks, layers, blanket, rain gear, shoes, pet gear, kid items",
-        ],
-        body: [
-          "For each person, start with water, food, light, first aid, basic hygiene, medications, charging, clothing layers, and a copy of emergency information. Then add needs that are specific to your household such as infant supplies, pet gear, mobility or medical equipment, and climate-specific gear. The most important checklist is the one that matches your real life.",
-        ],
+        imageSrc: "/guides/72-hour-kit/family-seasonal.svg",
+        imageAlt: "Blankets, baby supplies, and pet gear laid out for a household emergency kit.",
+        imageCaption: "The right extras depend on who lives in your house and what season you are planning for.",
       },
     ],
   },
   {
     slug: "how-to-store-water",
     title: "How to Store Water for Home Preparedness",
-    description: "A simple guide to containers, treatment, rotation, and backup water planning at home.",
+    description: "A practical guide to home water storage, treatment, rotation, and backup purification planning.",
     intro:
-      "Water planning is one of the fastest ways to improve household resilience. Good storage beats complicated gear when the tap stops working.",
+      "Water storage is one of the fastest ways to make your household more resilient. When the tap is off, contaminated, or unreliable, stored water buys you time, lowers stress, and keeps simple problems from turning into major ones.",
+    readTime: "9 min read",
+    publishedLabel: "Published January 2025",
+    updatedLabel: "Updated April 2026",
+    coverImageSrc: "/guides/how-to-store-water/hero-water.svg",
+    coverImageAlt: "Illustration of water storage jugs, stackable containers, and small purification supplies.",
+    coverImageCaption:
+      "Reliable storage comes first. Filters, tablets, and treatment are your second layer, not your only plan.",
+    quickChecklist: [
+      "Store at least 1 gallon of water per person per day for a minimum of 3 days.",
+      "Use food-safe containers and keep them out of heat, sunlight, and chemicals.",
+      "Label containers with the fill date and your treatment or rotation notes.",
+      "Keep a second layer ready: filter, purification tablets, or unscented bleach used correctly.",
+      "Build storage in more than one size so you can move, refill, and ration more easily.",
+    ],
     sections: [
       {
-        heading: "Choose reliable containers",
+        heading: "Start with how much water your household really needs",
+        summary: "Good storage starts with demand, not shopping.",
         body: [
-          "Use food-safe containers made for long-term storage whenever possible.",
-          "Label everything with the fill date and keep storage out of direct sunlight when you can.",
+          "A simple baseline is one gallon per person per day for drinking and basic sanitation. That minimum works as a starting point, but many households need more because of heat, pets, cooking, medical needs, or cleaning after a storm.",
+          "Think in layers. The first layer is the amount you want inside the house right now. The second layer is what you can safely refill, filter, or transport if service stays down longer than expected.",
         ],
+        bullets: [
+          "3 days is a starting point, not a limit.",
+          "Plan extra for children, nursing parents, elderly family members, and pets.",
+          "Hot climates and outage cleanup usually increase water use fast.",
+        ],
+        imageSrc: "/guides/how-to-store-water/containers.svg",
+        imageAlt: "Different home water storage containers including jugs, stackable bins, and bottles.",
+        imageCaption: "A mix of container sizes makes storage easier to move, use, and rotate.",
       },
       {
-        heading: "Treat and rotate",
+        heading: "Choose containers you trust and can manage",
+        summary: "The best container is the one that is food-safe, sealed well, and practical for your space.",
         body: [
-          "If you are using tap water, follow your local guidance on sanitizing containers and safe rotation intervals.",
-          "A rotation reminder on your calendar keeps the process simple.",
+          "Food-grade jugs, purpose-built stackable containers, and commercially sealed water are the simplest choices for most homes. Avoid containers that once held chemicals or anything that can leave residue or odor behind.",
+          "Do not store everything in one giant container if nobody in the house can lift it safely. Smaller containers are often easier to rotate and more useful if you need to move water room to room or load it in a vehicle.",
         ],
+        bullets: [
+          "Use food-safe storage only.",
+          "Favor container sizes you can actually lift and pour.",
+          "Store water away from direct sun, fuel, paint, and household chemicals.",
+        ],
+        imageSrc: "/guides/how-to-store-water/storage-space.svg",
+        imageAlt: "Water jugs and stacked storage containers stored neatly in a cool closet or utility room.",
+        imageCaption: "Cool, dark storage protects water quality and makes rotation easier.",
       },
       {
-        heading: "Have a backup purification plan",
+        heading: "Treat, label, and rotate without overcomplicating it",
+        summary: "The goal is a repeatable routine, not a perfect spreadsheet.",
         body: [
-          "Stored water is your first layer. Filters, purification tablets, and boiling are your backup layers.",
-          "Do not rely on one filter or one container size for every scenario.",
+          "If you are filling containers yourself, sanitize them first and follow dependable guidance for safe filling and treatment. Label each container with the date so you know what is oldest and what should be used first.",
+          "A calendar reminder is usually enough. Many households avoid water storage because they imagine a complicated maintenance plan, but a simple review every few months keeps the job manageable.",
+        ],
+        bullets: [
+          "Write the fill date clearly on each container.",
+          "Use the oldest water first for cleaning, watering plants, or routine backup use.",
+          "Check seals, odors, and storage conditions during every review.",
+        ],
+        imageSrc: "/guides/how-to-store-water/treatment.svg",
+        imageAlt: "Sanitizing supplies, labels, and rotation reminders for stored water containers.",
+        imageCaption: "A date label and a simple reminder system do most of the work.",
+      },
+      {
+        heading: "Keep backup purification ready for longer problems",
+        summary: "Stored water gets you through the opening phase. Purification keeps options open after that.",
+        body: [
+          "A filter, purification tablets, or another safe treatment method gives you options if the outage lasts longer or you need to refill from an uncertain source. Do not wait to figure this out after a main break, boil advisory, or storm contamination event.",
+          "Backup purification is most useful when paired with storage containers, not treated as a substitute for them. The best setup is stored water first, purification second, and a realistic idea of where replacement water would come from if the issue stretches out.",
+        ],
+        bullets: [
+          "Keep at least one tested purification method at home.",
+          "Store collapsible containers or spare jugs for emergency refill runs.",
+          "Write down safe refill sources and boil or treatment instructions before you need them.",
+        ],
+        imageSrc: "/guides/how-to-store-water/purification.svg",
+        imageAlt: "Portable water filter, purification tablets, and refill containers for emergency backup use.",
+        imageCaption: "Stored water is your first layer. Purification is the backup plan that keeps you flexible.",
+      },
+      {
+        heading: "Build a water plan that fits your home",
+        summary: "The best water setup is the one your household will actually maintain.",
+        body: [
+          "Apartment storage, large-family storage, storm-prone storage, and rural well-water storage all look different. The key is to start with a clear baseline, add storage that fits your space, and practice using it before an emergency forces the issue.",
+          "Even a modest water reserve changes how an outage feels. It gives you time to think, time to make better decisions, and time to solve the next problem without panic.",
+        ],
+        bullets: [
+          "Choose one primary storage spot and one overflow option.",
+          "Keep a small grab-and-go water layer if evacuation is possible in your area.",
+          "Review the plan every season and after any outage that exposes a weak point.",
         ],
       },
     ],

@@ -17,7 +17,6 @@ type PostCardProps = {
   isOwner?: boolean;
   groupName?: string;
   groupSlug?: string;
-  createdAt?: string;
 };
 
 export default function PostCard({
@@ -34,7 +33,6 @@ export default function PostCard({
   isOwner = false,
   groupName,
   groupSlug,
-  createdAt,
 }: PostCardProps) {
   const avatar = author.slice(0, 2).toUpperCase();
   const displayName = authorDisplayName || author;
@@ -57,7 +55,7 @@ export default function PostCard({
               </>
             ) : null}
           </div>
-          <p className="mt-1 text-xs text-muted">{createdAt ? new Date(createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Preparedness discussion"}</p>
+          <p className="mt-1 text-xs text-muted">Preparedness discussion</p>
         </div>
         {isOwner ? <PostOwnerActions postId={id} canEdit compact /> : null}
       </div>
@@ -68,9 +66,8 @@ export default function PostCard({
       </Link>
 
       <div className="mb-4 flex items-center gap-4 text-xs text-muted">
-        {likes > 0 ? <span>{likes} {likes === 1 ? "like" : "likes"}</span> : null}
-        {comments > 0 ? <span>{comments} {comments === 1 ? "comment" : "comments"}</span> : null}
-        {likes === 0 && comments === 0 ? <span>Be the first to respond</span> : null}
+        <span>{likes} likes</span>
+        <span>{comments} comments</span>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted">

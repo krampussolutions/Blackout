@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: "Blackout Network",
   description:
-    "A preparedness community for blackouts, off-grid living, food storage, water, medical readiness, communications, and self-reliance.",
+    "A social network for preppers, survivalists, off-grid families, and self-reliance communities.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
 };
 
@@ -48,12 +48,12 @@ export const categories = [
     description: "Pantry rotation, long-term storage, freeze-dried food, and canning.",
   },
   {
-    name: "Medical & First Aid",
+    name: "Medical",
     slug: "medical",
     description: "First aid kits, trauma prep, prescriptions, and field care basics.",
   },
   {
-    name: "Communications",
+    name: "Comms",
     slug: "comms",
     description: "Ham radio, emergency signals, batteries, and off-grid communications.",
   },
@@ -203,11 +203,11 @@ export const samplePosts = [
 
 export const groups = [
   { name: "Power Outages", slug: "power-outages", description: "Share blackout updates, backup power setups, outage prep, and grid-down experience." },
-  { name: "Off-Grid Living", slug: "off-grid-living", description: "Discuss solar, water, cabins, batteries, generators, and living off-grid." },
+  { name: "Off Grid Living", slug: "off-grid-living", description: "Discuss solar, water, cabins, batteries, generators, and living off-grid." },
   { name: "Food Storage", slug: "food-storage", description: "Long-term pantry planning, freeze-dried food, canning, and rotation systems." },
   { name: "Water & Filtration", slug: "water-filtration", description: "Storage, purification, wells, filters, and emergency water planning." },
-  { name: "Medical & First Aid", slug: "medical-first-aid", description: "Preparedness-minded discussion around kits, supplies, and first aid readiness." },
-  { name: "Communications", slug: "comms-group", description: "Ham radio, emergency communications, signal planning, and backup communication methods." },
+  { name: "Medical / First Aid", slug: "medical-first-aid", description: "Preparedness-minded discussion around kits, supplies, and first aid readiness." },
+  { name: "Comms", slug: "comms-group", description: "Ham radio, emergency communications, signal planning, and backup communication methods." },
   { name: "Homesteading", slug: "homesteading", description: "Gardens, livestock, self-reliance, preserving food, and homestead systems." },
   { name: "Security", slug: "security", description: "Home hardening, awareness, lighting, cameras, and practical safety planning." },
 ];

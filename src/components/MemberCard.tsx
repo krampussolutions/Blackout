@@ -41,7 +41,7 @@ export default function MemberCard({ member, compact = false }: MemberCardProps)
         </div>
       </div>
       <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted">
-        <span>{member.followers > 0 ? `${member.followers} follower${member.followers === 1 ? "" : "s"}` : member.joinedLabel}</span>
+        <span>{member.followers} followers</span>
         <FollowButton
           targetUserId={member.id}
           targetUsername={member.username}
