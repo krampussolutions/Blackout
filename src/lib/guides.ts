@@ -17,14 +17,29 @@ export type GuideChecklistGroup = {
   items: string[];
 };
 
+export type GuideFaq = {
+  question: string;
+  answer: string;
+};
+
 export type GuideEntry = {
   slug: string;
   title: string;
   description: string;
   intro: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  publishedAt?: string;
+  updatedAt?: string;
+  authorName?: string;
+  readingMinutes?: number;
   coverImage?: GuideImage;
   quickChecklist?: GuideChecklistGroup[];
   sections: GuideSection[];
+  faqs?: GuideFaq[];
+  relatedGuideSlugs?: string[];
+  joinCtaTitle?: string;
+  joinCtaBody?: string;
 };
 
 export const guides: GuideEntry[] = [
@@ -32,6 +47,13 @@ export const guides: GuideEntry[] = [
     slug: "72-hour-kit-checklist",
     title: "72-Hour Kit Checklist for Blackouts and Emergencies",
     description: "Build a practical 72-hour kit with water, food, power, medical gear, documents, and season-specific supplies.",
+    seoTitle: "72 Hour Emergency Kit Checklist for Blackouts and Emergencies",
+    seoDescription:
+      "Use this 72 hour emergency kit checklist to pack water, food, lighting, first aid, documents, clothing, and family essentials for blackouts and short-term emergencies.",
+    publishedAt: "2026-04-05",
+    updatedAt: "2026-04-05",
+    authorName: "Blackout Network",
+    readingMinutes: 8,
     intro:
       "A 72-hour kit is your short-term cushion when normal routines break down. It helps you get through blackouts, storms, road closures, evacuations, and household emergencies without immediately scrambling for basics. The goal is not to build the perfect bag overnight. The goal is to cover the first three days with dependable essentials that are easy to carry, easy to find, and easy to maintain.",
     coverImage: {
@@ -232,11 +254,39 @@ export const guides: GuideEntry[] = [
         ],
       },
     ],
+    faqs: [
+      {
+        question: "What should be in a 72 hour emergency kit?",
+        answer:
+          "A solid 72 hour kit starts with water, low-prep food, lighting, backup power, first aid, hygiene items, medications, copies of key documents, clothing, and household-specific extras like infant or pet supplies.",
+      },
+      {
+        question: "How much water should I pack for 72 hours?",
+        answer:
+          "Use at least one gallon per person per day as your baseline. That means at least three gallons per person for a 72-hour window, then add extra for heat, pets, illness, and limited sanitation options.",
+      },
+      {
+        question: "Should a 72 hour kit stay at home or in a vehicle?",
+        answer:
+          "The best setup is usually both: one main household kit and a smaller grab-and-go or vehicle version. That way you are covered whether you shelter at home, get stranded, or need to leave quickly.",
+      },
+    ],
+    relatedGuideSlugs: ["how-to-store-water", "home-backup-lighting", "family-emergency-comms-plan"],
+    joinCtaTitle: "Join the preparedness community",
+    joinCtaBody:
+      "Create a free account to follow blackout discussions, save new guides, and connect with people building real-world emergency plans.",
   },
   {
     slug: "how-to-store-water",
     title: "How to Store Water for Home Preparedness",
     description: "Learn how much water to store, which containers to use, where to keep them, how to rotate safely, and which backup purification layers matter most.",
+    seoTitle: "How to Store Water for Emergencies at Home",
+    seoDescription:
+      "Learn how to store water for emergencies, how much water to keep per person, the best storage containers, safe rotation habits, and backup purification options for home preparedness.",
+    publishedAt: "2026-04-05",
+    updatedAt: "2026-04-05",
+    authorName: "Blackout Network",
+    readingMinutes: 8,
     intro:
       "Water storage is one of the simplest preparedness upgrades you can make because it solves a problem before you are thirsty, stressed, or standing in line somewhere else. A good home water plan is not complicated. It is a mix of realistic household math, reliable containers, safe storage spots, rotation habits, and one or two backup purification options in case the disruption lasts longer than expected.",
     coverImage: {
@@ -439,6 +489,27 @@ export const guides: GuideEntry[] = [
         ],
       },
     ],
+    faqs: [
+      {
+        question: "How much water should I store per person?",
+        answer:
+          "A practical short-term baseline is one gallon per person per day for at least three days. Households often need more for pets, hot weather, cooking, sanitation, and medical situations.",
+      },
+      {
+        question: "What containers are best for emergency water storage?",
+        answer:
+          "Food-safe bottles, jugs, and purpose-built water containers are the safest default. A mix of smaller easy-to-carry containers and a few larger storage containers usually works better than one size for everything.",
+      },
+      {
+        question: "Do I still need a filter if I already store water?",
+        answer:
+          "Yes. Stored water is your first layer for immediate use, and backup purification gives you a second layer if the outage lasts longer or your main supply runs low.",
+      },
+    ],
+    relatedGuideSlugs: ["72-hour-kit-checklist", "family-emergency-comms-plan", "home-backup-lighting"],
+    joinCtaTitle: "Turn water storage into a real household plan",
+    joinCtaBody:
+      "Join Blackout Network to follow preparedness discussions, compare storage setups, and build a practical plan before the next outage or storm.",
   },
   {
     slug: "home-backup-lighting",
@@ -504,4 +575,15 @@ export const guides: GuideEntry[] = [
 
 export function getGuideBySlug(slug: string) {
   return guides.find((guide) => guide.slug === slug);
+}
+
+export function getRelatedGuides(guide: GuideEntry, limit = 3) {
+  const explicit = (guide.relatedGuideSlugs || [])
+    .map((slug) => getGuideBySlug(slug))
+    .filter((entry): entry is GuideEntry => Boolean(entry))
+    .filter((entry) => entry.slug !== guide.slug);
+
+  const fallback = guides.filter((entry) => entry.slug !== guide.slug && !explicit.some((item) => item.slug === entry.slug));
+
+  return [...explicit, ...fallback].slice(0, limit);
 }
