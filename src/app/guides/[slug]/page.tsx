@@ -299,42 +299,79 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               </section>
             ) : null}
 
-            <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+            <section className="space-y-4">
               <div className="card" aria-labelledby="related-guides-title">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Keep reading</p>
-                <h2 id="related-guides-title" className="mt-2 text-2xl font-semibold">Related preparedness guides</h2>
-                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Keep reading</p>
+                    <h2 id="related-guides-title" className="mt-2 text-2xl font-semibold">Related preparedness guides</h2>
+                  </div>
+                  <p className="max-w-2xl text-sm leading-6 text-muted">
+                    Open another practical guide to keep building your plan without bouncing around the site.
+                  </p>
+                </div>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
                   {relatedGuides.map((relatedGuide) => (
                     <Link
                       key={relatedGuide.slug}
                       href={`/guides/${relatedGuide.slug}`}
-                      className="rounded-2xl border border-white/10 bg-panelSoft p-4 transition hover:border-brand/40 hover:bg-panel"
+                      className="flex h-full flex-col rounded-2xl border border-white/10 bg-panelSoft p-5 transition hover:border-brand/40 hover:bg-panel"
                     >
                       <p className="text-xs uppercase tracking-[0.18em] text-muted">Guide</p>
-                      <h3 className="mt-2 text-lg font-semibold text-text">{relatedGuide.title}</h3>
-                      <p className="mt-2 text-sm leading-6 text-muted">{relatedGuide.description}</p>
-                      <span className="mt-4 inline-flex text-sm font-medium text-text">Read guide →</span>
+                      <h3
+                        className="mt-2 text-xl font-semibold text-text"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {relatedGuide.title}
+                      </h3>
+                      <p
+                        className="mt-3 text-sm leading-6 text-muted"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 4,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {relatedGuide.description}
+                      </p>
+                      <span className="mt-auto pt-5 text-sm font-medium text-text">Read guide →</span>
                     </Link>
                   ))}
                 </div>
               </div>
 
-              <aside className="card">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Join the network</p>
-                <h2 className="mt-2 text-2xl font-semibold">{guide.joinCtaTitle || "Preparedness is better with a network"}</h2>
-                <p className="mt-3 text-sm leading-7 text-muted md:text-base">
-                  {guide.joinCtaBody ||
-                    "Create a free account to follow preparedness discussions, join groups, and keep learning beyond the guide."}
-                </p>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <Link href="/join" className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-black transition hover:opacity-90">
-                    Join free
-                  </Link>
-                  <Link href="/guides" className="rounded-xl border border-white/10 bg-panelSoft px-4 py-2 text-sm font-semibold text-text transition hover:border-white/20 hover:bg-panel">
-                    Browse all guides
-                  </Link>
+              <section className="card" aria-labelledby="guide-join-title">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="max-w-2xl">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Join the network</p>
+                    <h2 id="guide-join-title" className="mt-2 text-2xl font-semibold">{guide.joinCtaTitle || "Preparedness is better with a network"}</h2>
+                    <p className="mt-3 text-sm leading-7 text-muted md:text-base">
+                      {guide.joinCtaBody ||
+                        "Create a free account to follow preparedness discussions, join groups, and keep learning beyond the guide."}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3 lg:justify-end">
+                    <Link
+                      href="/join"
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-black transition hover:opacity-90"
+                    >
+                      Join free
+                    </Link>
+                    <Link
+                      href="/guides"
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-panelSoft px-5 py-2.5 text-sm font-semibold text-text transition hover:border-white/20 hover:bg-panel"
+                    >
+                      Browse all guides
+                    </Link>
+                  </div>
                 </div>
-              </aside>
+              </section>
             </section>
           </div>
 
