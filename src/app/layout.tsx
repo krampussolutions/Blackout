@@ -9,11 +9,11 @@ import InviteAnnouncementGate from "@/components/InviteAnnouncementGate";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: `${siteConfig.name} | Preparedness Community`,
+  title: `${siteConfig.name} | Prepper Community for Blackouts, Off-Grid Living, and Emergency Readiness`,
   description: siteConfig.description,
   metadataBase: new URL("https://www.blackout-network.com"),
   openGraph: {
-    title: `${siteConfig.name} | Preparedness Community`,
+    title: `${siteConfig.name} | Prepper Community for Blackouts, Off-Grid Living, and Emergency Readiness`,
     description: siteConfig.description,
     url: "https://www.blackout-network.com",
     siteName: siteConfig.name,
@@ -29,11 +29,14 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteConfig.name} | Preparedness Community`,
+    title: `${siteConfig.name} | Prepper Community for Blackouts, Off-Grid Living, and Emergency Readiness`,
     description: siteConfig.description,
     images: ["https://www.blackout-network.com/og-image.png"],
   },
 };
+
+const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "ca-pub-5957528671321920";
+const adsenseScriptSrc = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`;
 
 export default function RootLayout({
   children,
@@ -45,6 +48,12 @@ export default function RootLayout({
         <Script id="google-analytics" strategy="afterInteractive">
           {`window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-FTZY69G833');`}
         </Script>
+        <Script
+          async
+          crossOrigin="anonymous"
+          src={adsenseScriptSrc}
+          strategy="afterInteractive"
+        />
         <ServiceWorkerRegistrar />
         <BrowserNotificationListener />
         <Nav />
