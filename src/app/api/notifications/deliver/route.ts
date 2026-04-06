@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   const actor = actorProfile || null;
   const text = getNotificationText(notification, actor);
   const href = getNotificationHref(notification, actor);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace("https://blackout-network.com", "https://www.blackout-network.com") || "http://localhost:3000";
   const email = authUserResponse.data.user?.email;
 
   let emailDelivered = false;

@@ -1,8 +1,22 @@
+function normalizeSiteUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.hostname === "blackout-network.com") {
+      parsed.hostname = "www.blackout-network.com";
+    }
+
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return url.replace(/\/$/, "");
+  }
+}
+
 export const siteConfig = {
   name: "Blackout Network",
   description:
     "A preparedness community for blackouts, off-grid living, food storage, water, medical readiness, communications, and self-reliance.",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  url: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
 };
 
 export type MemberProfile = {
