@@ -22,6 +22,13 @@ export type GuideFaq = {
   answer: string;
 };
 
+export type GuideDownload = {
+  href: string;
+  title: string;
+  description: string;
+  buttonLabel?: string;
+};
+
 export type GuideEntry = {
   slug: string;
   title: string;
@@ -37,6 +44,7 @@ export type GuideEntry = {
   quickChecklist?: GuideChecklistGroup[];
   sections: GuideSection[];
   faqs?: GuideFaq[];
+  download?: GuideDownload;
   relatedGuideSlugs?: string[];
   joinCtaTitle?: string;
   joinCtaBody?: string;
@@ -60,6 +68,13 @@ export const guides: GuideEntry[] = [
       src: "/guides/72-hour-kit/hero-kit.svg",
       alt: "Illustration of a staged 72-hour emergency kit with water, food, lighting, first-aid, and documents.",
       caption: "A good 72-hour kit covers the basics first: water, food, light, first aid, documents, clothing, and practical extras.",
+    },
+    download: {
+      href: "/downloads/72-hour-preparedness-checklist.pdf",
+      title: "Download the in-depth prep checklist",
+      description:
+        "Grab a printable PDF with room to track what is packed, what still needs to be bought, where items are stored, and when the kit gets reviewed.",
+      buttonLabel: "Download PDF checklist",
     },
     quickChecklist: [
       {

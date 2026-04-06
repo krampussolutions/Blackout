@@ -253,6 +253,35 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
               </section>
             ) : null}
 
+            {guide.download ? (
+              <section className="card" aria-labelledby="guide-download-title">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="max-w-3xl">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Free download</p>
+                    <h2 id="guide-download-title" className="mt-2 text-2xl font-semibold">{guide.download.title}</h2>
+                    <p className="mt-3 text-sm leading-7 text-muted md:text-base">{guide.download.description}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-3 lg:justify-end">
+                    <a
+                      href={guide.download.href}
+                      download
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-black transition hover:opacity-90"
+                    >
+                      {guide.download.buttonLabel || "Download checklist"}
+                    </a>
+                    <a
+                      href={guide.download.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-panelSoft px-5 py-2.5 text-sm font-semibold text-text transition hover:border-white/20 hover:bg-panel"
+                    >
+                      Open printable PDF
+                    </a>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
             <AdSlot title="Sponsored" variant="in-article" />
 
             {guide.sections.map((section, index) => (
